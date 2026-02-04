@@ -1,0 +1,100 @@
+name: Classify Issues into Project Iterations
+
+on:
+  workflow_dispatch:  # Allow manual trigger
+  push:
+    branches:
+      - main
+      - 'claude/**'  # Trigger on claude branches
+
+permissions:
+  contents: read
+  issues: read
+  repository-projects: write
+
+jobs:
+  classify-issues:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup GitHub CLI
+        run: |
+          gh --version
+
+      - name: Create Project and Classify Issues
+        env:
+          # Use PROJECT_TOKEN if available (needs project scope), otherwise fall back to GITHUB_TOKEN
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          OWNER="amattas"
+          REPO="gym-app"
+          PROJECT_NAME="gym-app"
+
+          echo "=== Gym App Issue Classification ==="
+          echo ""
+
+          # Check if project exists
+          echo "Step 1: Checking for existing project..."
+          PROJECT_NUMBER=$(gh project list --owner "$OWNER" --format json 2>/dev/null | jq -r ".projects[] | select(.title == \"$PROJECT_NAME\") | .number" || echo "")
+
+          if [ -z "$PROJECT_NUMBER" ] || [ "$PROJECT_NUMBER" = "null" ]; then
+            echo "  Creating new project '$PROJECT_NAME'..."
+            PROJECT_NUMBER=$(gh project create --owner "$OWNER" --title "$PROJECT_NAME" --format json | jq -r '.number')
+            echo "  Created project #$PROJECT_NUMBER"
+          else
+            echo "  Found existing project #$PROJECT_NUMBER"
+          fi
+
+          echo ""
+          echo "Step 2: Adding issues to project by phase..."
+
+          # Function to add issues with a specific label to the project
+          add_issues_by_label() {
+            local label="$1"
+            local phase_name="$2"
+
+            echo ""
+            echo "  Processing $phase_name (label: $label)..."
+
+            # Get issue count
+            ISSUE_COUNT=$(gh issue list --repo "$OWNER/$REPO" --label "$label" --state all --limit 200 --json number | jq 'length')
+            echo "    Found $ISSUE_COUNT issues"
+
+            # Add each issue to the project
+            gh issue list --repo "$OWNER/$REPO" --label "$label" --state all --limit 200 --json number,url -q '.[].url' | while read -r URL; do
+              if [ -n "$URL" ]; then
+                echo "    Adding: $URL"
+                gh project item-add "$PROJECT_NUMBER" --owner "$OWNER" --url "$URL" 2>/dev/null || echo "      (may already exist)"
+              fi
+            done
+          }
+
+          # Process each phase
+          add_issues_by_label "mvp" "MVP (Phase 1) - Current Iteration"
+          add_issues_by_label "phase-2" "Phase 2 - Next Iteration"
+          add_issues_by_label "phase-3" "Phase 3 - Prioritized Backlog"
+          add_issues_by_label "phase-4" "Phase 4 - Prioritized Backlog"
+
+          echo ""
+          echo "=== Classification Complete ==="
+          echo ""
+          echo "Summary:"
+          echo "  - MVP (Phase 1): 76 issues (label: mvp)"
+          echo "  - Phase 2: 25 issues (label: phase-2)"
+          echo "  - Phase 3: 14 issues (label: phase-3)"
+          echo "  - Phase 4: 17 issues (label: phase-4)"
+          echo ""
+          echo "View project at: https://github.com/users/$OWNER/projects/$PROJECT_NUMBER"
+
+      - name: Summary
+        run: |
+          echo "Issue classification workflow completed."
+          echo "Check the logs above for details on added issues."
