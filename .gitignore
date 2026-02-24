@@ -145,3 +145,8 @@ dump.rdb
 # Claude Code (local settings)
 # ==============================
 .claude/settings.local.json
+
+# ==============================
+# Git Worktrees
+# ==============================
+.worktrees/
