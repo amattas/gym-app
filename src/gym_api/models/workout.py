@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, Integer, DateTime, Boolean, ForeignKey, Numeric, func
+from sqlalchemy import String, Integer, DateTime, Boolean, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from gym_api.database import Base
+from gym_api.models.exercise import Exercise  # noqa: F401 — used by relationship forward ref
 
 
 class Workout(Base):

@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from gym_api.config import settings
 from gym_api.database import get_db
 from gym_api.models.summary import ClientWorkoutSummary
-from gym_api.models.workout import Workout, WorkoutExercise, WorkoutSet, WorkoutSetMeasurement
+from gym_api.models.workout import Workout, WorkoutExercise, WorkoutSet
 from gym_api.models.analytics import WorkoutAnalytics
 from gym_api.models.client import Client
 from gym_api.models.program import Program
