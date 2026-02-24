@@ -1,0 +1,147 @@
+# ==============================
+# OS
+# ==============================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ==============================
+# IDEs & Editors
+# ==============================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ==============================
+# Environment & Secrets
+# ==============================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+credentials.json
+secrets.yaml
+secrets.yml
+
+# ==============================
+# Python (gym-api, gym-sdk-python)
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.whl
+.venv/
+venv/
+env/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.tox/
+.nox/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==============================
+# Node.js / Next.js (gym-app-web)
+# ==============================
+node_modules/
+.next/
+out/
+.nuxt/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+*.tsbuildinfo
+
+# ==============================
+# Kotlin / Android (gym-sdk-kotlin, gym-app-android)
+# ==============================
+*.class
+*.jar
+*.aar
+*.apk
+*.aab
+*.dex
+*.ap_
+*.log
+local.properties
+.gradle/
+gradle/.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# ==============================
+# Swift / iOS / Xcode (gym-sdk-swift, gym-app-ios)
+# ==============================
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+Pods/
+*.xcframework/
+.build/
+Package.resolved
+
+# ==============================
+# Docker
+# ==============================
+docker-compose.override.yml
+
+# ==============================
+# Databases (local dev)
+# ==============================
+*.sqlite3
+*.db
+dump.rdb
+
+# ==============================
+# Terraform / Infrastructure
+# ==============================
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# ==============================
+# Claude Code (local settings)
+# ==============================
+.claude/settings.local.json
