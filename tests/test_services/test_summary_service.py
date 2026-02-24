@@ -71,7 +71,10 @@ async def test_get_summary_generates_on_cache_miss():
         )
     )
 
-    mock_db = AsyncMock()
+    mock_db = MagicMock()
+    mock_db.execute = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
 
     service = SummaryService(provider=mock_provider, provider_name="anthropic", model_id="test-model")
     result = await service.get_summary(

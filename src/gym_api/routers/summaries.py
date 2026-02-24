@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime
 
@@ -14,7 +15,10 @@ from gym_api.models.analytics import WorkoutAnalytics
 from gym_api.models.client import Client
 from gym_api.models.program import Program
 from gym_api.services.ai.factory import create_summary_provider
+from gym_api.services.ai.provider import SummaryGenerationError
 from gym_api.services.summary_service import SummaryService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/gyms/{gym_id}/clients/{client_id}", tags=["summaries"])
 
@@ -43,7 +47,15 @@ async def get_workout_summary(
     gym_id: uuid.UUID,
     client_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    # TODO: Add auth dependency when auth middleware is implemented
+    # current_user: User = Depends(get_current_user),
 ):
+    # Validate client belongs to gym
+    client_result = await db.execute(select(Client).where(Client.client_id == client_id))
+    client = client_result.scalar_one_or_none()
+    if not client or client.gym_id != gym_id:
+        raise HTTPException(status_code=404, detail="Client not found in this gym")
+
     cached = await get_cached_summary(db, client_id)
     latest_ended_at = await get_latest_workout_ended_at(db, client_id)
 
@@ -77,9 +89,7 @@ async def get_workout_summary(
     )
     analytics = {a.workout_id: a for a in analytics_result.scalars().all()}
 
-    client_result = await db.execute(select(Client).where(Client.client_id == client_id))
-    client = client_result.scalar_one_or_none()
-    client_name = f"{client.first_name} {client.last_name}" if client else "Unknown"
+    client_name = f"{client.first_name} {client.last_name}"
 
     program_name = None
     if workouts[0].program_id:
@@ -99,16 +109,21 @@ async def get_workout_summary(
         provider_name=settings.ai_summary_provider,
         model_id=settings.ai_summary_model,
     )
-    summary = await service.get_summary(
-        db=db,
-        client_id=client_id,
-        gym_id=gym_id,
-        workouts=workouts,
-        analytics=analytics,
-        client_name=client_name,
-        program_name=program_name,
-        cached_summary=None,
-    )
+
+    try:
+        summary = await service.get_summary(
+            db=db,
+            client_id=client_id,
+            gym_id=gym_id,
+            workouts=workouts,
+            analytics=analytics,
+            client_name=client_name,
+            program_name=program_name,
+            cached_summary=None,
+        )
+    except SummaryGenerationError:
+        logger.exception("Failed to generate workout summary for client %s", client_id)
+        raise HTTPException(status_code=503, detail="Summary generation temporarily unavailable")
 
     return _format_response(summary, is_cached=False)
 

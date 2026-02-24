@@ -1,6 +1,6 @@
 import openai
 
-from gym_api.services.ai.provider import SummaryProvider
+from gym_api.services.ai.provider import SummaryProvider, SummaryGenerationError
 from gym_api.services.ai.prompt import build_summary_prompt, SYSTEM_PROMPT
 from gym_api.services.ai.types import WorkoutSummaryContext, SummaryResult
 
@@ -12,16 +12,24 @@ class OpenAIProvider(SummaryProvider):
 
     async def generate_summary(self, context: WorkoutSummaryContext) -> SummaryResult:
         user_message = build_summary_prompt(context)
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            max_tokens=1024,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ],
-        )
+        try:
+            response = await self._client.chat.completions.create(
+                model=self._model,
+                max_tokens=1024,
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": user_message},
+                ],
+            )
+        except Exception as e:
+            raise SummaryGenerationError(f"OpenAI API error: {e}") from e
+
+        content = response.choices[0].message.content if response.choices else None
+        if not content:
+            raise SummaryGenerationError("OpenAI returned empty response")
+
         return SummaryResult(
-            summary_text=response.choices[0].message.content,
+            summary_text=content,
             prompt_tokens=response.usage.prompt_tokens,
             completion_tokens=response.usage.completion_tokens,
         )
