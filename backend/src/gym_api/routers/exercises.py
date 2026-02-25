@@ -3,12 +3,15 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_get, cache_set
 from gym_api.database import get_db
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.exercise import ExerciseCreate, ExerciseResponse, ExerciseUpdate
 from gym_api.services import exercise_service
 
 router = APIRouter(prefix="/v1/exercises", tags=["exercises"])
+
+CACHE_TTL = 300
 
 
 @router.post("", status_code=201, response_model=dict)
@@ -43,13 +46,20 @@ async def get_exercise(
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"exercise:{exercise_id}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
     exercise = await exercise_service.get_exercise(db, exercise_id)
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
     # Ensure the exercise belongs to this gym or is global
     if exercise.gym_id is not None and exercise.gym_id != gym_id:
         raise HTTPException(status_code=404, detail="Exercise not found")
-    return {"data": ExerciseResponse.model_validate(exercise)}
+    response = {"data": ExerciseResponse.model_validate(exercise).model_dump()}
+    await cache_set(cache_key, response, CACHE_TTL)
+    return response
 
 
 @router.patch("/{exercise_id}", response_model=dict)

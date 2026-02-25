@@ -3,12 +3,15 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_get, cache_set
 from gym_api.database import get_db
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.program import ProgramCreate, ProgramResponse, ProgramUpdate
 from gym_api.services import program_service
 
 router = APIRouter(prefix="/v1/programs", tags=["programs"])
+
+CACHE_TTL = 300
 
 
 @router.post("", status_code=201, response_model=dict)
@@ -44,10 +47,17 @@ async def get_program(
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"program:{program_id}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
     program = await program_service.get_program(db, gym_id, program_id)
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
-    return {"data": ProgramResponse.model_validate(program)}
+    response = {"data": ProgramResponse.model_validate(program).model_dump()}
+    await cache_set(cache_key, response, CACHE_TTL)
+    return response
 
 
 @router.patch("/{program_id}", response_model=dict)

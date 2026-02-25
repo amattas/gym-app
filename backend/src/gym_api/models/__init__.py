@@ -18,6 +18,7 @@ from gym_api.models.data_request import (
     DeletionStatus,
     ExportStatus,
 )
+from gym_api.models.email_verification import EmailVerificationToken
 from gym_api.models.exercise import Exercise
 from gym_api.models.goal import ClientGoal, GoalStatus
 from gym_api.models.gym import Gym
@@ -53,6 +54,7 @@ __all__ = [
     "Client",
     "ClientStatus",
     "Gender",
+    "EmailVerificationToken",
     "Trainer",
     "TrainerInvitation",
     "Exercise",

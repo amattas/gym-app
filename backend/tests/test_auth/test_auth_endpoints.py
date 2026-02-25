@@ -14,6 +14,11 @@ async def test_register_success(client):
     with (
         patch("gym_api.routers.auth.auth_service.register_user", return_value=user),
         patch("gym_api.routers.auth.check_password_breach", return_value=False),
+        patch(
+            "gym_api.routers.auth.create_email_verification_token",
+            return_value="fake-token",
+        ),
+        patch("gym_api.routers.auth.send_email_verification", return_value=True),
     ):
         resp = await client.post(
             "/v1/auth/register",
