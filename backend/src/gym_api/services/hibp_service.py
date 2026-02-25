@@ -8,7 +8,7 @@ HIBP_API = "https://api.pwnedpasswords.com/range/"
 
 
 async def check_password_breach(password: str) -> bool:
-    sha1 = hashlib.sha1(password.encode()).hexdigest().upper()
+    sha1 = hashlib.sha1(password.encode(), usedforsecurity=False).hexdigest().upper()  # nosec B324
     prefix = sha1[:5]
     suffix = sha1[5:]
 
