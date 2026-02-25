@@ -3,14 +3,26 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.config import settings
 from gym_api.database import get_db
 from gym_api.dependencies.auth import get_current_user
+from gym_api.email.email_service import send_email_verification, send_password_reset
 from gym_api.models.user import User
 from gym_api.services import auth_service
 from gym_api.services.hibp_service import check_password_breach
 from gym_api.services.mfa_service import generate_totp_secret, get_totp_uri, verify_totp
+from gym_api.services.password_service import hash_password
+from gym_api.services.verification_service import (
+    consume_email_verification_token,
+    consume_password_reset_token,
+    create_email_verification_token,
+    create_password_reset_token,
+    validate_email_verification_token,
+    validate_password_reset_token,
+)
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
 
@@ -45,6 +57,23 @@ class MFASetupResponse(BaseModel):
 
 class MFAVerifyRequest(BaseModel):
     code: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 
 class SessionResponse(BaseModel):
@@ -92,6 +121,11 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+    raw_token = await create_email_verification_token(db, user.user_id)
+    verify_url = f"{settings.frontend_url}/verify-email?token={raw_token}"
+    await send_email_verification(to=user.email, verify_url=verify_url)
+
     return {"data": {"user_id": str(user.user_id), "email": user.email}}
 
 
@@ -186,3 +220,75 @@ async def revoke_all_sessions(
     user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     await auth_service.revoke_all_sessions(db, user.user_id)
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == body.email))
+    user = result.scalar_one_or_none()
+    if user:
+        raw_token = await create_password_reset_token(db, user.user_id)
+        reset_url = f"{settings.frontend_url}/reset-password?token={raw_token}"
+        await send_password_reset(to=user.email, reset_url=reset_url)
+    # Always return success to prevent email enumeration
+    return {"data": {"message": "If that email exists, a reset link has been sent."}}
+
+
+@router.post("/reset-password")
+async def reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    error = _validate_password(body.new_password)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    if await check_password_breach(body.new_password):
+        raise HTTPException(
+            status_code=400,
+            detail="This password has appeared in a known data breach. "
+            "Please choose a different password.",
+        )
+
+    token = await validate_password_reset_token(db, body.token)
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    result = await db.execute(select(User).where(User.user_id == token.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.password_hash = hash_password(body.new_password)
+    await consume_password_reset_token(db, token)
+    await db.commit()
+    return {"data": {"message": "Password has been reset successfully."}}
+
+
+@router.post("/verify-email")
+async def verify_email(body: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    token = await validate_email_verification_token(db, body.token)
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    result = await db.execute(select(User).where(User.user_id == token.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+
+    user.email_verified = True
+    await consume_email_verification_token(db, token)
+    await db.commit()
+    return {"data": {"message": "Email verified successfully."}}
+
+
+@router.post("/resend-verification")
+async def resend_verification(
+    body: ResendVerificationRequest, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.email == body.email))
+    user = result.scalar_one_or_none()
+    if user and not user.email_verified:
+        raw_token = await create_email_verification_token(db, user.user_id)
+        verify_url = f"{settings.frontend_url}/verify-email?token={raw_token}"
+        await send_email_verification(to=user.email, verify_url=verify_url)
+    # Always return success to prevent email enumeration
+    msg = "If that email exists and is unverified, a verification link has been sent."
+    return {"data": {"message": msg}}

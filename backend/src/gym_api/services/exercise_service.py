@@ -3,8 +3,13 @@ import uuid
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_delete
 from gym_api.models.exercise import Exercise
 from gym_api.utils.pagination import apply_cursor_pagination, build_pagination_meta
+
+
+def _cache_key(exercise_id: uuid.UUID) -> str:
+    return f"exercise:{exercise_id}"
 
 
 async def create_exercise(
@@ -46,9 +51,12 @@ async def update_exercise(db: AsyncSession, exercise: Exercise, **kwargs) -> Exe
             setattr(exercise, key, value)
     await db.commit()
     await db.refresh(exercise)
+    await cache_delete(_cache_key(exercise.exercise_id))
     return exercise
 
 
 async def delete_exercise(db: AsyncSession, exercise: Exercise) -> None:
+    exercise_id = exercise.exercise_id
     await db.delete(exercise)
     await db.commit()
+    await cache_delete(_cache_key(exercise_id))

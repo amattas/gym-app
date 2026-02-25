@@ -44,7 +44,7 @@ class Client(Base):
     emergency_contact_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     emergency_contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     status: Mapped[ClientStatus] = mapped_column(
-        Enum(ClientStatus), default=ClientStatus.active, nullable=False
+        Enum(ClientStatus), default=ClientStatus.active, index=True, nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

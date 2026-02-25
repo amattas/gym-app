@@ -3,8 +3,13 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_delete
 from gym_api.models.gym import Gym
 from gym_api.utils.pagination import apply_cursor_pagination, build_pagination_meta
+
+
+def _cache_key(gym_id: uuid.UUID) -> str:
+    return f"gym:{gym_id}"
 
 
 async def create_gym(db: AsyncSession, *, name: str, slug: str, **kwargs) -> Gym:
@@ -40,4 +45,5 @@ async def update_gym(db: AsyncSession, gym: Gym, **kwargs) -> Gym:
             setattr(gym, key, value)
     await db.commit()
     await db.refresh(gym)
+    await cache_delete(_cache_key(gym.gym_id))
     return gym

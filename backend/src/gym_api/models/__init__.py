@@ -1,4 +1,5 @@
 from gym_api.models.client import Client, ClientStatus, Gender
+from gym_api.models.email_verification import EmailVerificationToken
 from gym_api.models.exercise import Exercise
 from gym_api.models.gym import Gym
 from gym_api.models.measurement import Measurement, MeasurementType
@@ -19,6 +20,7 @@ __all__ = [
     "Client",
     "ClientStatus",
     "Gender",
+    "EmailVerificationToken",
     "Trainer",
     "TrainerInvitation",
     "Exercise",
