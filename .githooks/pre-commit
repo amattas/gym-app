@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run ruff linter on backend source code
+# Prevents commits with linting errors
+#
+# Install: git config core.hooksPath .githooks
+
+# Only lint if any backend Python files are staged
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM -- 'backend/**/*.py')
+
+if [ -n "$STAGED_PY" ]; then
+    echo "Running ruff check on backend..."
+    cd backend
+    python -m ruff check .
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        echo ""
+        echo "Lint errors found. Fix with: cd backend && python -m ruff check . --fix"
+        echo "Commit aborted."
+        exit 1
+    fi
+    echo "Ruff check passed."
+fi
+
+exit 0

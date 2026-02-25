@@ -31,17 +31,32 @@ async def test_cleanup_expired_tokens():
 
 
 async def test_check_membership_expiry():
-    mock_result = MagicMock()
-    mock_result.all.return_value = [("active", "fake-id"), ("inactive", "fake-id-2")]
-
     mock_db = AsyncMock()
-    mock_db.execute = AsyncMock(return_value=mock_result)
     mock_db.__aenter__ = AsyncMock(return_value=mock_db)
     mock_db.__aexit__ = AsyncMock(return_value=None)
 
-    with patch("gym_api.jobs.membership_expiry.async_session", return_value=mock_db):
+    with (
+        patch("gym_api.jobs.membership_expiry.async_session", return_value=mock_db),
+        patch(
+            "gym_api.jobs.membership_expiry.membership_service.process_expired_memberships",
+            new_callable=AsyncMock,
+            return_value=2,
+        ) as expired_mock,
+        patch(
+            "gym_api.jobs.membership_expiry.membership_service.process_pending_cancellations",
+            new_callable=AsyncMock,
+            return_value=1,
+        ) as cancel_mock,
+        patch(
+            "gym_api.jobs.membership_expiry.membership_service.process_period_resets",
+            new_callable=AsyncMock,
+            return_value=3,
+        ) as reset_mock,
+    ):
         from gym_api.jobs.membership_expiry import check_membership_expiry
 
         await check_membership_expiry()
 
-    mock_db.execute.assert_called_once()
+    expired_mock.assert_called_once_with(mock_db)
+    cancel_mock.assert_called_once_with(mock_db)
+    reset_mock.assert_called_once_with(mock_db)
