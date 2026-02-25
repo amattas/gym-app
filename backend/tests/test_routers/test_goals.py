@@ -192,6 +192,11 @@ async def test_create_program_day_exercise(client):
         mock.return_value = exercise
         resp = await client.post(
             f"/v1/program-days/{DAY_ID}/exercises",
-            json={"exercise_id": str(uuid.uuid4()), "order_index": 0, "default_sets": 3, "default_reps": 10},
+            json={
+                "exercise_id": str(uuid.uuid4()),
+                "order_index": 0,
+                "default_sets": 3,
+                "default_reps": 10,
+            },
         )
     assert resp.status_code == 201

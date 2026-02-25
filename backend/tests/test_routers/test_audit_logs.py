@@ -37,7 +37,8 @@ def _auth_override():
     def _fake_require_role(*roles):
         return lambda: user
 
-    app.dependency_overrides[require_role(UserRole.gym_admin, UserRole.platform_admin)] = lambda: user
+    override_key = require_role(UserRole.gym_admin, UserRole.platform_admin)
+    app.dependency_overrides[override_key] = lambda: user
     yield
     app.dependency_overrides.clear()
 
