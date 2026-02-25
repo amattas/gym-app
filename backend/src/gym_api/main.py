@@ -12,11 +12,13 @@ from gym_api.middleware.idempotency import IdempotencyMiddleware
 from gym_api.middleware.rate_limiter import RateLimiterMiddleware
 from gym_api.middleware.request_id import RequestIDMiddleware
 from gym_api.middleware.security_headers import SecurityHeadersMiddleware
+from gym_api.routers.analytics import router as analytics_router
 from gym_api.routers.auth import router as auth_router
 from gym_api.routers.clients import router as clients_router
 from gym_api.routers.exercises import router as exercises_router
 from gym_api.routers.gyms import router as gyms_router
 from gym_api.routers.health import router as health_router
+from gym_api.routers.invitations import router as invitations_router
 from gym_api.routers.measurements import router as measurements_router
 from gym_api.routers.programs import router as programs_router
 from gym_api.routers.trainers import router as trainers_router
@@ -48,3 +50,5 @@ app.include_router(exercises_router)
 app.include_router(programs_router)
 app.include_router(workouts_router)
 app.include_router(measurements_router)
+app.include_router(invitations_router)
+app.include_router(analytics_router)

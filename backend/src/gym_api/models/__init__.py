@@ -3,10 +3,12 @@ from gym_api.models.exercise import Exercise
 from gym_api.models.gym import Gym
 from gym_api.models.measurement import Measurement, MeasurementType
 from gym_api.models.password_reset import PasswordResetToken
+from gym_api.models.personal_record import PersonalRecord, PRType
 from gym_api.models.program import Program, TemplateScope
 from gym_api.models.refresh_token import RefreshToken
 from gym_api.models.session import UserSession
 from gym_api.models.trainer import Trainer
+from gym_api.models.trainer_invitation import TrainerInvitation
 from gym_api.models.user import User, UserRole
 from gym_api.models.workout import Workout, WorkoutExercise, WorkoutSet, WorkoutStatus
 
@@ -18,6 +20,7 @@ __all__ = [
     "ClientStatus",
     "Gender",
     "Trainer",
+    "TrainerInvitation",
     "Exercise",
     "Program",
     "TemplateScope",
@@ -27,6 +30,8 @@ __all__ = [
     "WorkoutSet",
     "Measurement",
     "MeasurementType",
+    "PersonalRecord",
+    "PRType",
     "RefreshToken",
     "PasswordResetToken",
     "UserSession",
