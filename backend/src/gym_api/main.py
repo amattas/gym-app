@@ -9,6 +9,7 @@ from gym_api.middleware.error_handler import (
 )
 from gym_api.middleware.idempotency import IdempotencyMiddleware
 from gym_api.middleware.request_id import RequestIDMiddleware
+from gym_api.routers.auth import router as auth_router
 from gym_api.routers.health import router as health_router
 
 app = FastAPI(title="Gym API", version="0.1.0")
@@ -24,3 +25,4 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Routers
 app.include_router(health_router)
+app.include_router(auth_router)
