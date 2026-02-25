@@ -4,17 +4,22 @@ import pytest
 
 from tests.test_auth.helpers import make_mock_user
 
+VALID_PASSWORD = "SecureP@ssw0rd123"
+
 
 @pytest.mark.asyncio
 async def test_register_success(client):
     user = make_mock_user(email="new@gym.com")
 
-    with patch("gym_api.routers.auth.auth_service.register_user", return_value=user):
+    with (
+        patch("gym_api.routers.auth.auth_service.register_user", return_value=user),
+        patch("gym_api.routers.auth.check_password_breach", return_value=False),
+    ):
         resp = await client.post(
             "/v1/auth/register",
             json={
                 "email": "new@gym.com",
-                "password": "securepassword123",
+                "password": VALID_PASSWORD,
                 "first_name": "New",
                 "last_name": "User",
             },
@@ -29,25 +34,75 @@ async def test_register_short_password(client):
         "/v1/auth/register",
         json={
             "email": "user@gym.com",
-            "password": "short",
+            "password": "Short1!",
             "first_name": "A",
             "last_name": "B",
         },
     )
     assert resp.status_code == 400
+    assert "12 characters" in resp.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_register_missing_uppercase(client):
+    resp = await client.post(
+        "/v1/auth/register",
+        json={
+            "email": "user@gym.com",
+            "password": "nouppercase1234!",
+            "first_name": "A",
+            "last_name": "B",
+        },
+    )
+    assert resp.status_code == 400
+    assert "uppercase" in resp.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_register_missing_special_char(client):
+    resp = await client.post(
+        "/v1/auth/register",
+        json={
+            "email": "user@gym.com",
+            "password": "NoSpecialChar123",
+            "first_name": "A",
+            "last_name": "B",
+        },
+    )
+    assert resp.status_code == 400
+    assert "special character" in resp.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_register_breached_password(client):
+    with patch("gym_api.routers.auth.check_password_breach", return_value=True):
+        resp = await client.post(
+            "/v1/auth/register",
+            json={
+                "email": "user@gym.com",
+                "password": VALID_PASSWORD,
+                "first_name": "A",
+                "last_name": "B",
+            },
+        )
+    assert resp.status_code == 400
+    assert "breach" in resp.json()["error"]["message"]
 
 
 @pytest.mark.asyncio
 async def test_register_duplicate_email(client):
-    with patch(
-        "gym_api.routers.auth.auth_service.register_user",
-        side_effect=ValueError("Email already registered"),
+    with (
+        patch(
+            "gym_api.routers.auth.auth_service.register_user",
+            side_effect=ValueError("Email already registered"),
+        ),
+        patch("gym_api.routers.auth.check_password_breach", return_value=False),
     ):
         resp = await client.post(
             "/v1/auth/register",
             json={
                 "email": "dup@gym.com",
-                "password": "longpassword",
+                "password": VALID_PASSWORD,
                 "first_name": "A",
                 "last_name": "B",
             },
