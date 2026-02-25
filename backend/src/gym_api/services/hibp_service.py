@@ -21,7 +21,9 @@ async def check_password_breach(password: str) -> bool:
         return False
 
     for line in response.text.splitlines():
-        hash_suffix, count = line.split(":")
-        if hash_suffix.strip() == suffix:
+        parts = line.split(":", 1)
+        if len(parts) != 2:
+            continue
+        if parts[0].strip() == suffix:
             return True
     return False

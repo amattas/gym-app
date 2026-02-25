@@ -1,13 +1,21 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 
+from gym_api.cache.cache_service import close_redis
+from gym_api.config import settings
+from gym_api.jobs.scheduler import setup_scheduler
+from gym_api.metrics.prometheus import setup_metrics
 from gym_api.middleware.cors import create_cors_middleware
 from gym_api.middleware.error_handler import (
     ErrorHandlerMiddleware,
     http_exception_handler,
     validation_exception_handler,
 )
+from gym_api.middleware.https_redirect import create_https_redirect_middleware
 from gym_api.middleware.idempotency import IdempotencyMiddleware
 from gym_api.middleware.rate_limiter import RateLimiterMiddleware
 from gym_api.middleware.request_id import RequestIDMiddleware
@@ -23,11 +31,43 @@ from gym_api.routers.measurements import router as measurements_router
 from gym_api.routers.programs import router as programs_router
 from gym_api.routers.trainers import router as trainers_router
 from gym_api.routers.workouts import router as workouts_router
+from gym_api.utils.log_redaction import PiiRedactionFilter
 
-app = FastAPI(title="Gym API", version="0.1.0")
+
+def _setup_logging() -> None:
+    pii_filter = PiiRedactionFilter()
+    for handler in logging.root.handlers:
+        handler.addFilter(pii_filter)
+    if not logging.root.handlers:
+        handler = logging.StreamHandler()
+        handler.addFilter(pii_filter)
+        logging.root.addHandler(handler)
+    logging.root.setLevel(logging.INFO)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings.validate_jwt_secret()
+    _setup_logging()
+    sched = setup_scheduler()
+    sched.start()
+    logging.getLogger(__name__).info("Scheduler started")
+    yield
+    sched.shutdown(wait=False)
+    await close_redis()
+    logging.getLogger(__name__).info("Shutdown complete")
+
+
+app = FastAPI(title="Gym API", version="0.1.0", lifespan=lifespan)
 
 # CORS (must be added before other middleware)
 create_cors_middleware(app)
+
+# Metrics
+setup_metrics(app)
+
+# HTTPS redirect (enabled via ENFORCE_HTTPS=true)
+create_https_redirect_middleware(app)
 
 # Middleware stack (outermost first — added last runs first)
 app.add_middleware(RequestIDMiddleware)

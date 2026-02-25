@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -8,6 +9,7 @@ from gym_api.database import get_db
 from gym_api.dependencies.auth import get_current_user
 from gym_api.models.user import User
 from gym_api.services import auth_service
+from gym_api.services.hibp_service import check_password_breach
 from gym_api.services.mfa_service import generate_totp_secret, get_totp_uri, verify_totp
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
@@ -53,10 +55,33 @@ class SessionResponse(BaseModel):
     created_at: str
 
 
+def _validate_password(password: str) -> str | None:
+    if len(password) < 12:
+        return "Password must be at least 12 characters"
+    if not re.search(r"[A-Z]", password):
+        return "Password must contain at least one uppercase letter"
+    if not re.search(r"[a-z]", password):
+        return "Password must contain at least one lowercase letter"
+    if not re.search(r"\d", password):
+        return "Password must contain at least one digit"
+    if not re.search(r"[^A-Za-z0-9]", password):
+        return "Password must contain at least one special character"
+    return None
+
+
 @router.post("/register", status_code=201)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    if len(body.password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    error = _validate_password(body.password)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    if await check_password_breach(body.password):
+        raise HTTPException(
+            status_code=400,
+            detail="This password has appeared in a known data breach. "
+            "Please choose a different password.",
+        )
+
     try:
         user = await auth_service.register_user(
             db,
