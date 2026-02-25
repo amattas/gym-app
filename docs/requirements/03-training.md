@@ -56,7 +56,8 @@ Program
 
 After visit completion:
 1. The Program advances its pointer to the next Workout
-2. The final Workout loops back to the beginning unless the trainer removes/changes the program
+2. **MVP**: Programs end after the last workout is completed. Trainer manually reassigns or creates a new program.
+3. **Post-MVP**: The final Workout loops back to the beginning unless the trainer removes/changes the program
 
 ---
 

@@ -96,7 +96,7 @@ This document defines the Minimum Viable Product (MVP) scope for the gym managem
 | Backend | Python 3.11+ with FastAPI |
 | Frontend | React 18+ with Next.js 14+ |
 | Primary Database | PostgreSQL 15+ |
-| Document/Config Store | MongoDB (Atlas or self-hosted) |
+| Document/Config Store | PostgreSQL JSONB (no separate document store for MVP) |
 | Cache Layer | Redis |
 | Hosting | Google Cloud Platform (GKE/Kubernetes) |
 | Email Service | Resend |
@@ -493,7 +493,7 @@ This document defines the Minimum Viable Product (MVP) scope for the gym managem
 | Backend framework | FastAPI | Modern async Python, good performance, auto-docs |
 | Frontend framework | Next.js | React ecosystem, SSR, good DX |
 | Database | PostgreSQL | ACID compliance, complex queries, proven |
-| Document store | MongoDB | Config flexibility, time-series support |
+| Document store | PostgreSQL JSONB | Config flexibility via JSONB, no separate document DB for MVP |
 | Cache | Redis | Performance, pub/sub potential |
 | Hosting | GKE | Kubernetes portability, GCP services |
 | Email | Resend | Good deliverability, reasonable pricing |

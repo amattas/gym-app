@@ -572,7 +572,8 @@ When a client checks in / workout starts:
 - A **Program** is a set of multiple Workouts designed by a trainer
 - Programs are separate from **Plans** (payment/membership)
 - Plans control module access (feature enable/disable), e.g. programming, health integration, progress photos
-- A client can have one active Program at a time (unless trainer assigns a new program)
+- **MVP**: A client can have exactly one active Program at a time. Assigning a new program deactivates the current one.
+- **Post-MVP**: A client may have multiple active Programs (subject to Plan entitlements)
 
 #### Program Structure
 
@@ -592,7 +593,8 @@ When a client checks in / workout starts:
 
 - After visit completion:
   - The Program advances its pointer to the next Workout
-  - The final Workout loops back to the beginning unless the trainer removes/changes the program
+  - **MVP**: Programs end after the last workout is completed. The trainer manually reassigns or creates a new program. Auto-looping is deferred to a future release.
+  - **Post-MVP**: The final Workout loops back to the beginning unless the trainer removes/changes the program
 
 ### 4.8 Scheduling & Calendar Export
 
@@ -636,7 +638,7 @@ When a client checks in / workout starts:
   - **Plan** = what a client pays for (membership/entitlement bundle)
   - **Program** = prescribed set of training activities
   - Plans control module access (feature enable/disable)
-  - A client can have multiple active Programs (subject to Plan entitlements)
+  - **Post-MVP**: A client can have multiple active Programs (subject to Plan entitlements). **MVP**: One active program per client.
 - **Plan types**: Plans categorized by type (`gym_access`, `personal_training`, `group_classes`, etc.)
   - **Constraint**: Client can only have ONE active membership per `plan_type`
   - **Valid combo**: "Monthly Gym Access" + "10-Pack Training" (different types)
@@ -2422,17 +2424,15 @@ MCP is a **trainer-specific OAuth2 authorization** that allows AI assistants (li
 - A Program is a set of multiple ProgramDays (workouts) designed by a trainer
 - Programs are separate from Plans (payment), but Plans can enable/disable the programming module
 
-**Visit assignment** (supports multiple active programs):
-- A client may have multiple active Programs
-- On check-in / workout start for a visit:
-  - The system assigns exercises from the client's next ProgramDay for each active Program to that visit (i.e., a composite workout made of multiple program-day blocks)
-  - The client can optionally skip one or more Programs for that visit
+**Visit assignment**:
+- **MVP**: A client has one active Program. On check-in, the system loads the next Workout from that program.
+- **Post-MVP**: A client may have multiple active Programs. The system assigns exercises from each active Program's next ProgramDay to a composite workout. The client can optionally skip Programs for that visit.
 
 **Advancement**:
 - After visit completion:
-  - Each non-skipped Program advances its pointer to `next_program_day_id`
-  - Any skipped Program does not advance
-  - The final day loops back to the beginning unless the trainer removes/changes the program
+  - The Program advances its pointer to `next_program_day_id`
+  - **MVP**: Programs end after the last workout. Trainer manually reassigns.
+  - **Post-MVP**: The final day loops back to the beginning unless the trainer removes/changes the program
 
 ### 3.5.1 Scheduling & Calendar Export
 
@@ -2772,7 +2772,7 @@ Calculate `avg_workout_duration_minutes` and `avg_schedule_variance_minutes` usi
   - **Plan** = what a client pays for (membership/entitlement bundle)
   - **Program** = prescribed set of training activities
   - Plans control module access (feature enable/disable), e.g. programming, health integration, progress photos, etc.
-  - A client can have multiple active Programs (subject to Plan entitlements)
+  - **Post-MVP**: A client can have multiple active Programs (subject to Plan entitlements). **MVP**: One active program per client.
 - **Plan types**: Plans categorized by type (`gym_access`, `personal_training`, `group_classes`, etc.)
   - **Constraint**: Client can only have ONE active membership per `plan_type`
   - **Valid combo**: "Monthly Gym Access" + "10-Pack Training" (different types)

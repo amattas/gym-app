@@ -21,13 +21,15 @@
 
 ## 1. Data Layer Architecture
 
-### 1.1 Storage Strategy (Hybrid: PostgreSQL + MongoDB + Redis)
+### 1.1 Storage Strategy (PostgreSQL + Redis)
 
-The system uses a hybrid storage approach with three complementary data stores, each optimized for specific access patterns and requirements.
+> **Note (2026-02-24)**: The MVP uses PostgreSQL + Redis only. MongoDB references below are retained for post-MVP context but are **not implemented for MVP**. All data that was originally designated for MongoDB (GymPlanLimits, PlanTemplate, UsageMetricRollup, TrainerAvailability, GymAnalytics) will use PostgreSQL with JSONB columns and time-partitioned tables. See `docs/technical/00-architecture.md` for the migration strategy.
 
-#### PostgreSQL (System of Record for OLTP)
+The system uses PostgreSQL as the primary database with Redis for caching and coordination.
 
-Use **PostgreSQL** as the authoritative system of record for all transactional, relational data:
+#### PostgreSQL (System of Record)
+
+Use **PostgreSQL** as the authoritative system of record for all data:
 
 - **User & Auth**: users, roles, sessions, MFA credentials, OAuth2 clients/tokens
 - **Organizational Hierarchy**: gyms, locations, accounts, clients, trainers
