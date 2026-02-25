@@ -32,7 +32,7 @@ class PersonalRecord(Base):
     exercise_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), index=True, nullable=False
     )
-    pr_type: Mapped[PRType] = mapped_column(Enum(PRType), nullable=False)
+    pr_type: Mapped[PRType] = mapped_column(Enum(PRType), index=True, nullable=False)
     weight_kg: Mapped[float | None] = mapped_column(Numeric(7, 2), nullable=True)
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     volume_kg: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)

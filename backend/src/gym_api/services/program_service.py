@@ -3,8 +3,13 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_delete
 from gym_api.models.program import Program, TemplateScope
 from gym_api.utils.pagination import apply_cursor_pagination, build_pagination_meta
+
+
+def _cache_key(program_id: uuid.UUID) -> str:
+    return f"program:{program_id}"
 
 
 async def create_program(
@@ -54,9 +59,12 @@ async def update_program(db: AsyncSession, program: Program, **kwargs) -> Progra
             setattr(program, key, value)
     await db.commit()
     await db.refresh(program)
+    await cache_delete(_cache_key(program.program_id))
     return program
 
 
 async def delete_program(db: AsyncSession, program: Program) -> None:
+    program_id = program.program_id
     await db.delete(program)
     await db.commit()
+    await cache_delete(_cache_key(program_id))

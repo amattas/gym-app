@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from gym_api.cache.cache_service import cache_get, cache_set
 from gym_api.database import get_db
 from gym_api.dependencies.auth import require_role
 from gym_api.models.user import User, UserRole
@@ -10,6 +11,8 @@ from gym_api.schemas.gym import GymCreate, GymResponse, GymUpdate
 from gym_api.services import gym_service
 
 router = APIRouter(prefix="/v1/gyms", tags=["gyms"])
+
+CACHE_TTL = 300
 
 
 @router.post("", status_code=201, response_model=dict)
@@ -45,10 +48,17 @@ async def get_gym(
     user: User = Depends(require_role(UserRole.platform_admin, UserRole.gym_admin)),
     db: AsyncSession = Depends(get_db),
 ):
+    cache_key = f"gym:{gym_id}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
     gym = await gym_service.get_gym(db, gym_id)
     if not gym:
         raise HTTPException(status_code=404, detail="Gym not found")
-    return {"data": GymResponse.model_validate(gym)}
+    response = {"data": GymResponse.model_validate(gym).model_dump()}
+    await cache_set(cache_key, response, CACHE_TTL)
+    return response
 
 
 @router.patch("/{gym_id}", response_model=dict)
