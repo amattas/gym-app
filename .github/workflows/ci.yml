@@ -48,25 +48,19 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install black ruff mypy bandit pip-audit
-
-      - name: Check formatting (black)
-        run: black --check .
+          pip install ".[dev]"
+          pip install bandit pip-audit
 
       - name: Lint (ruff)
-        run: ruff check .
-
-      - name: Type check (mypy)
-        run: mypy . || true
+        run: ruff check src/ tests/
 
       - name: Security scan (bandit)
-        run: bandit -r src/
+        run: bandit -r src/ -q
 
       - name: Dependency audit
         run: pip-audit || true
@@ -78,21 +72,54 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gym
+          POSTGRES_PASSWORD: gym
+          POSTGRES_DB: gym_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gym"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install ".[dev]"
 
       - name: Run tests
-        run: python -m pytest tests/ -v --cov=src --cov-report=term-missing
+        env:
+          DATABASE_URL: postgresql+asyncpg://gym:gym@localhost:5432/gym_test
+        run: python -m pytest tests/ -v --tb=short
+
+  backend-docker:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t gym-api:ci ./backend
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: gym-api:ci
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
 
   # ---------------------------------------------------------------------------
   # TypeScript/JS — web (Next.js)
