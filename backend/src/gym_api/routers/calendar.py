@@ -6,9 +6,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
-from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
-from gym_api.models.user import User
 from gym_api.services import busyness_service, ical_service, reporting_service
 
 router = APIRouter(tags=["calendar"])

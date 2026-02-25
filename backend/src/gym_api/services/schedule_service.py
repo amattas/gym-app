@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.models.schedule import (
@@ -59,7 +59,9 @@ async def list_schedules(
     if date:
         day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
-        query = query.where(Schedule.scheduled_start >= day_start, Schedule.scheduled_start < day_end)
+        query = query.where(
+            Schedule.scheduled_start >= day_start, Schedule.scheduled_start < day_end
+        )
     if status:
         query = query.where(Schedule.status == status)
     query = apply_cursor_pagination(

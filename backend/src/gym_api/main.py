@@ -34,7 +34,8 @@ from gym_api.routers.goals import router as goals_router
 from gym_api.routers.gyms import router as gyms_router
 from gym_api.routers.health import router as health_router
 from gym_api.routers.invitations import router as invitations_router
-from gym_api.routers.locations import location_detail_router, router as locations_router
+from gym_api.routers.locations import location_detail_router
+from gym_api.routers.locations import router as locations_router
 from gym_api.routers.measurements import router as measurements_router
 from gym_api.routers.memberships import router as memberships_router
 from gym_api.routers.notes import router as notes_router

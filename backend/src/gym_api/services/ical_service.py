@@ -97,7 +97,9 @@ async def generate_ics(
             f"DTSTART:{s.scheduled_start.strftime('%Y%m%dT%H%M%SZ')}",
             f"DTEND:{s.scheduled_end.strftime('%Y%m%dT%H%M%SZ')}",
             f"SUMMARY:{summary}",
-            f"STATUS:{s.status.value.upper() if hasattr(s.status, 'value') else str(s.status).upper()}",
+            "STATUS:{}".format(
+                s.status.value.upper() if hasattr(s.status, "value") else str(s.status).upper()
+            ),
             "END:VEVENT",
         ])
     lines.append("END:VCALENDAR")
