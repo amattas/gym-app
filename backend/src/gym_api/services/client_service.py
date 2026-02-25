@@ -31,10 +31,36 @@ async def list_clients(
     db: AsyncSession,
     gym_id: uuid.UUID,
     *,
+    search: str | None = None,
+    status: str | None = None,
+    trainer_id: uuid.UUID | None = None,
     cursor: str | None = None,
     limit: int = 20,
 ) -> tuple[list[Client], dict]:
     query = select(Client).where(Client.gym_id == gym_id, Client.deleted_at.is_(None))
+    if search:
+        pattern = f"%{search}%"
+        from sqlalchemy import or_
+
+        query = query.where(
+            or_(
+                Client.first_name.ilike(pattern),
+                Client.last_name.ilike(pattern),
+                Client.email.ilike(pattern),
+                Client.phone.ilike(pattern),
+            )
+        )
+    if status:
+        query = query.where(Client.status == status)
+    if trainer_id:
+        from gym_api.models.trainer_client import TrainerClientAssignment
+
+        subq = (
+            select(TrainerClientAssignment.client_id)
+            .where(TrainerClientAssignment.trainer_id == trainer_id)
+            .scalar_subquery()
+        )
+        query = query.where(Client.client_id.in_(subq))
     query = apply_cursor_pagination(
         query, order_column=Client.created_at, cursor=cursor, limit=limit
     )

@@ -20,16 +20,31 @@ from gym_api.middleware.idempotency import IdempotencyMiddleware
 from gym_api.middleware.rate_limiter import RateLimiterMiddleware
 from gym_api.middleware.request_id import RequestIDMiddleware
 from gym_api.middleware.security_headers import SecurityHeadersMiddleware
+from gym_api.routers.accounts import router as accounts_router
+from gym_api.routers.ai_summaries import router as ai_summaries_router
 from gym_api.routers.analytics import router as analytics_router
+from gym_api.routers.audit_logs import router as audit_logs_router
 from gym_api.routers.auth import router as auth_router
+from gym_api.routers.calendar import router as calendar_router
+from gym_api.routers.check_ins import router as check_ins_router
 from gym_api.routers.clients import router as clients_router
+from gym_api.routers.data_privacy import router as data_privacy_router
 from gym_api.routers.exercises import router as exercises_router
+from gym_api.routers.goals import router as goals_router
 from gym_api.routers.gyms import router as gyms_router
 from gym_api.routers.health import router as health_router
 from gym_api.routers.invitations import router as invitations_router
+from gym_api.routers.locations import location_detail_router, router as locations_router
 from gym_api.routers.measurements import router as measurements_router
+from gym_api.routers.memberships import router as memberships_router
+from gym_api.routers.notes import router as notes_router
+from gym_api.routers.notifications import router as notifications_router
+from gym_api.routers.plan_templates import router as plan_templates_router
 from gym_api.routers.programs import router as programs_router
+from gym_api.routers.progress_photos import router as progress_photos_router
+from gym_api.routers.schedules import router as schedules_router
 from gym_api.routers.trainers import router as trainers_router
+from gym_api.routers.webhook_endpoints import router as webhook_endpoints_router
 from gym_api.routers.workouts import router as workouts_router
 from gym_api.utils.log_redaction import PiiRedactionFilter
 
@@ -92,3 +107,19 @@ app.include_router(workouts_router)
 app.include_router(measurements_router)
 app.include_router(invitations_router)
 app.include_router(analytics_router)
+app.include_router(plan_templates_router)
+app.include_router(memberships_router)
+app.include_router(locations_router)
+app.include_router(location_detail_router)
+app.include_router(schedules_router)
+app.include_router(check_ins_router)
+app.include_router(goals_router)
+app.include_router(notes_router)
+app.include_router(audit_logs_router)
+app.include_router(progress_photos_router)
+app.include_router(webhook_endpoints_router)
+app.include_router(accounts_router)
+app.include_router(notifications_router)
+app.include_router(calendar_router)
+app.include_router(ai_summaries_router)
+app.include_router(data_privacy_router)
