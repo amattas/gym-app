@@ -92,9 +92,7 @@ async def create_refresh_token(db: AsyncSession, user_id: uuid.UUID) -> str:
 
 async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> tuple[User, str] | None:
     token_hash = _hash_refresh(raw_token)
-    result = await db.execute(
-        select(RefreshToken).where(RefreshToken.token_hash == token_hash)
-    )
+    result = await db.execute(select(RefreshToken).where(RefreshToken.token_hash == token_hash))
     stored = result.scalar_one_or_none()
 
     if not stored or stored.is_revoked:
@@ -147,9 +145,9 @@ async def create_session(
 
 async def list_sessions(db: AsyncSession, user_id: uuid.UUID) -> list[UserSession]:
     result = await db.execute(
-        select(UserSession).where(UserSession.user_id == user_id).order_by(
-            UserSession.last_used_at.desc()
-        )
+        select(UserSession)
+        .where(UserSession.user_id == user_id)
+        .order_by(UserSession.last_used_at.desc())
     )
     return list(result.scalars().all())
 

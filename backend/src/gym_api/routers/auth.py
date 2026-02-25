@@ -71,9 +71,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login")
-async def login(
-    body: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)
-):
+async def login(body: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
     user = await auth_service.authenticate_user(db, email=body.email, password=body.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -105,9 +103,7 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/mfa/setup")
-async def mfa_setup(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
+async def mfa_setup(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if user.mfa_enabled:
         raise HTTPException(status_code=400, detail="MFA already enabled")
     secret = generate_totp_secret()
@@ -133,9 +129,7 @@ async def mfa_verify(
 
 
 @router.get("/sessions")
-async def list_sessions(
-    user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
+async def list_sessions(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     sessions = await auth_service.list_sessions(db, user.user_id)
     return {
         "data": [

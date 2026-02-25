@@ -55,8 +55,6 @@ async def test_validation_error_format(client):
 
 @pytest.mark.asyncio
 async def test_error_includes_request_id_from_header(client):
-    resp = await client.get(
-        "/test/http-error", headers={"X-Request-ID": "err-test-123"}
-    )
+    resp = await client.get("/test/http-error", headers={"X-Request-ID": "err-test-123"})
     body = resp.json()
     assert body["meta"]["request_id"] == "err-test-123"
