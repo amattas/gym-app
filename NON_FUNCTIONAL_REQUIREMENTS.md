@@ -332,9 +332,8 @@ Never log sensitive information:
 - **Never allow** `*` wildcard in production
 
 **CSRF Protection**:
-- CSRF tokens required for all state-changing operations
-- SameSite cookie attribute: `SameSite=Strict` or `SameSite=Lax`
-- Not required for Bearer token authentication (API-only clients)
+- **Not required**: The API uses Bearer token authentication exclusively (no cookies for auth). CSRF attacks exploit cookie-based authentication, so CSRF tokens are unnecessary for this architecture.
+- If cookie-based sessions are added in the future (e.g., web dashboard), CSRF protection must be revisited.
 
 **Security Headers**:
 ```
@@ -509,11 +508,9 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 - **Encryption**: AES-256 encryption at rest
 
 **NoSQL Backups (MongoDB)**:
-- **Frequency**: Continuous backups (point-in-time recovery via MongoDB Atlas or managed service)
-- **Retention**: 35 days point-in-time recovery window
-- **Storage**: Cross-region replication for disaster recovery
+> **MVP Decision**: Not applicable — MongoDB not used for MVP. All data in PostgreSQL.
 
-**Object Storage Backups (Digital Ocean Spaces)**:
+**Object Storage Backups (GCS / Cloud Storage)**:
 - **Versioning**: Enabled for all objects (progress photos, signed PDFs)
 - **Retention**: Indefinite (matches data retention policy)
 - **Replication**: Cross-region replication to secondary region
@@ -644,12 +641,12 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 
 #### 3.9.1 Architecture Overview
 
-**Primary Platform**: Digital Ocean Kubernetes (DOKS) for MVP and early growth
-**Migration Path**: Azure Kubernetes Service (AKS) if platform scales and requires enhanced security features
+**Primary Platform**: Google Cloud Platform (GKE) for MVP and beyond.
+**Rationale**: GKE provides a more mature Kubernetes environment, stronger IAM integration, and better scaling options than DOKS. This aligns with the MVP_REQUIREMENTS.md decision.
 
-**Note**: The infrastructure examples below reference AWS/EKS for illustration. These will be adapted to Digital Ocean equivalents during implementation. Digital Ocean provides managed Kubernetes (DOKS), managed databases (PostgreSQL, Redis), container registry, Spaces (object storage), and monitoring services that map to the AWS services shown below.
+> **Note (2026-02-24)**: Earlier drafts of this document referenced DigitalOcean (DOKS). The hosting decision has been updated to GCP/GKE. References to DigitalOcean infrastructure below should be read as GCP equivalents: GKE (Kubernetes), Cloud SQL (PostgreSQL), Memorystore (Redis), Cloud Storage (object storage), Artifact Registry (container registry).
 
-The gym platform deploys to **Digital Ocean Kubernetes (DOKS)** with the following architecture:
+The gym platform deploys to **Google Kubernetes Engine (GKE)** with the following architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -735,13 +732,7 @@ initContainers:
 ```
 
 **MongoDB (NoSQL Database)**:
-- **Staging**: MongoDB in K8s (StatefulSet)
-- **Production**: MongoDB Atlas or Digital Ocean Managed MongoDB
-- **Configuration**:
-  - Cluster: Scaled appropriately (production), basic tier (staging)
-  - Region: NYC3 (aligned with DOKS)
-  - Backups: Continuous (point-in-time recovery)
-  - Network: VPC Peering with DOKS VPC
+> **MVP Decision (2026-02-24)**: MongoDB is not used for MVP. All document/config data stored in PostgreSQL with JSONB columns. This section retained for post-MVP reference only.
 
 **Redis (Cache & Sessions)**:
 - **Staging**: Redis in K8s (Deployment)
