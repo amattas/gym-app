@@ -11,6 +11,7 @@ from gym_api.database import Base
 
 class MembershipStatus(str, enum.Enum):
     active = "active"
+    trial = "trial"
     paused = "paused"
     cancelled = "cancelled"
     expired = "expired"

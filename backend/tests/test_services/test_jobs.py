@@ -38,6 +38,11 @@ async def test_check_membership_expiry():
     with (
         patch("gym_api.jobs.membership_expiry.async_session", return_value=mock_db),
         patch(
+            "gym_api.jobs.membership_expiry.membership_service.process_trial_conversions",
+            new_callable=AsyncMock,
+            return_value=0,
+        ) as trial_mock,
+        patch(
             "gym_api.jobs.membership_expiry.membership_service.process_expired_memberships",
             new_callable=AsyncMock,
             return_value=2,
@@ -57,6 +62,7 @@ async def test_check_membership_expiry():
 
         await check_membership_expiry()
 
+    trial_mock.assert_called_once_with(mock_db)
     expired_mock.assert_called_once_with(mock_db)
     cancel_mock.assert_called_once_with(mock_db)
     reset_mock.assert_called_once_with(mock_db)
