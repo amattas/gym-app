@@ -18,18 +18,17 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const gymId = localStorage.getItem("gym_id");
-    if (gymId) {
-      api
-        .get<{ data: DashboardData }>(
+    const load = async () => {
+      const gymId = localStorage.getItem("gym_id");
+      if (!gymId) return;
+      try {
+        const res = await api.get<{ data: DashboardData }>(
           `/v1/gyms/${gymId}/analytics/dashboard?period=30`
-        )
-        .then((res) => setData(res.data))
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+        );
+        setData(res.data);
+      } catch {}
+    };
+    load().finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {

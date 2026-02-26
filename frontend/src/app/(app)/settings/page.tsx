@@ -26,21 +26,18 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const gymId = localStorage.getItem("gym_id");
-    if (gymId) {
-      api
-        .get<{ data: Gym }>(`/v1/gyms/${gymId}`)
-        .then((res) => {
-          setGym(res.data);
-          setName(res.data.name);
-          setEmail(res.data.email || "");
-          setPhone(res.data.phone || "");
-        })
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    const load = async () => {
+      const gymId = localStorage.getItem("gym_id");
+      if (!gymId) return;
+      try {
+        const res = await api.get<{ data: Gym }>(`/v1/gyms/${gymId}`);
+        setGym(res.data);
+        setName(res.data.name);
+        setEmail(res.data.email || "");
+        setPhone(res.data.phone || "");
+      } catch {}
+    };
+    load().finally(() => setIsLoading(false));
   }, []);
 
   async function handleSave(e: React.FormEvent) {

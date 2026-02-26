@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Loader2, Plus, Trash2 } from "lucide-react";
+import { CreditCard, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -187,6 +194,18 @@ export default function BillingPage() {
                   <div className="space-y-2">
                     <Label>Code</Label>
                     <Input value={code} onChange={(e) => setCode(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={discountType} onValueChange={setDiscountType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                        <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Amount</Label>

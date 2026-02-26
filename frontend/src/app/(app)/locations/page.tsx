@@ -21,16 +21,17 @@ export default function LocationsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const gymId = localStorage.getItem("gym_id");
-    if (gymId) {
-      api
-        .get<{ data: Location[] }>(`/v1/gyms/${gymId}/locations`)
-        .then((res) => setLocations(res.data))
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    const load = async () => {
+      const gymId = localStorage.getItem("gym_id");
+      if (!gymId) return;
+      try {
+        const res = await api.get<{ data: Location[] }>(
+          `/v1/gyms/${gymId}/locations`
+        );
+        setLocations(res.data);
+      } catch {}
+    };
+    load().finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {
