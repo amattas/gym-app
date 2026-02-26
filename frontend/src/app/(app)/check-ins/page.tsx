@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ClipboardCheck, Loader2, UserCheck } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { ClipboardCheck, Loader2, UserCheck, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -26,23 +33,67 @@ interface CheckIn {
   checked_out_at: string | null;
 }
 
+interface Location {
+  location_id: string;
+  name: string;
+}
+
+interface Occupancy {
+  current_count: number;
+  capacity?: number;
+}
+
 export default function CheckInsPage() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [clientId, setClientId] = useState("");
   const [isChecking, setIsChecking] = useState(false);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [occupancy, setOccupancy] = useState<Occupancy | null>(null);
+  const [filterDate, setFilterDate] = useState("");
 
-  function fetchCheckIns() {
+  useEffect(() => {
     api
-      .get<{ data: CheckIn[] }>("/v1/check-ins")
-      .then((res) => setCheckIns(res.data))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }
+      .get<{ data: Location[] }>("/v1/locations")
+      .then((res) => setLocations(res.data))
+      .catch(() => {});
+  }, []);
+
+  const fetchCheckIns = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedLocation) params.set("location_id", selectedLocation);
+      if (filterDate) params.set("date", filterDate);
+      const qs = params.toString();
+      const res = await api.get<{ data: CheckIn[] }>(
+        `/v1/check-ins${qs ? `?${qs}` : ""}`
+      );
+      setCheckIns(res.data);
+    } catch {
+      setCheckIns([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedLocation, filterDate]);
 
   useEffect(() => {
     fetchCheckIns();
-  }, []);
+  }, [fetchCheckIns]);
+
+  useEffect(() => {
+    if (!selectedLocation) {
+      setOccupancy(null);
+      return;
+    }
+    api
+      .get<{ data: Occupancy }>(
+        `/v1/locations/${selectedLocation}/occupancy`
+      )
+      .then((res) => setOccupancy(res.data))
+      .catch(() => setOccupancy(null));
+  }, [selectedLocation]);
 
   async function handleCheckIn(e: React.FormEvent) {
     e.preventDefault();
@@ -53,10 +104,19 @@ export default function CheckInsPage() {
       await api.post("/v1/check-ins", {
         client_id: clientId,
         check_in_method: "manual",
+        ...(selectedLocation ? { location_id: selectedLocation } : {}),
       });
       toast.success("Client checked in");
       setClientId("");
       fetchCheckIns();
+      if (selectedLocation) {
+        api
+          .get<{ data: Occupancy }>(
+            `/v1/locations/${selectedLocation}/occupancy`
+          )
+          .then((res) => setOccupancy(res.data))
+          .catch(() => {});
+      }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Check-in failed"
@@ -71,6 +131,14 @@ export default function CheckInsPage() {
       await api.post(`/v1/check-ins/${checkInId}/checkout`);
       toast.success("Checked out");
       fetchCheckIns();
+      if (selectedLocation) {
+        api
+          .get<{ data: Occupancy }>(
+            `/v1/locations/${selectedLocation}/occupancy`
+          )
+          .then((res) => setOccupancy(res.data))
+          .catch(() => {});
+      }
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Checkout failed"
@@ -87,6 +155,57 @@ export default function CheckInsPage() {
           <p className="text-muted-foreground">
             Manage gym attendance
           </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {occupancy && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                Current Occupancy
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">
+                {occupancy.current_count}
+                {occupancy.capacity && (
+                  <span className="text-lg text-muted-foreground ml-1">
+                    / {occupancy.capacity}
+                  </span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="flex items-end gap-4 flex-wrap">
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Location</Label>
+          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All locations</SelectItem>
+              {locations.map((loc) => (
+                <SelectItem key={loc.location_id} value={loc.location_id}>
+                  {loc.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Date</Label>
+          <Input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="w-48"
+          />
         </div>
       </div>
 
@@ -160,7 +279,7 @@ export default function CheckInsPage() {
                           hour: "2-digit",
                           minute: "2-digit",
                         })
-                      : "—"}
+                      : "\u2014"}
                   </TableCell>
                   <TableCell>
                     {!ci.checked_out_at && (

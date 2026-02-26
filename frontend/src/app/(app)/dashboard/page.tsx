@@ -20,34 +20,39 @@ export default function DashboardPage() {
   useEffect(() => {
     const gymId = localStorage.getItem("gym_id");
     if (gymId) {
-      api
-        .get<{ data: DashboardStats }>(
-          `/v1/gyms/${gymId}/analytics/dashboard?period=30`
-        )
-        .then((res) => setStats(res.data))
-        .catch(() => {});
+      const load = async () => {
+        try {
+          const res = await api.get<{ data: DashboardStats }>(
+            `/v1/gyms/${gymId}/analytics/dashboard?period=30`
+          );
+          setStats(res.data);
+        } catch {
+          // ignore
+        }
+      };
+      load();
     }
   }, []);
 
   const cards = [
     {
       title: "Total Clients",
-      value: stats?.total_clients ?? "—",
+      value: stats?.total_clients ?? "\u2014",
       icon: Users,
     },
     {
       title: "Active Memberships",
-      value: stats?.active_memberships ?? "—",
+      value: stats?.active_memberships ?? "\u2014",
       icon: TrendingUp,
     },
     {
       title: "Schedules Today",
-      value: stats?.schedules_today ?? "—",
+      value: stats?.schedules_today ?? "\u2014",
       icon: Calendar,
     },
     {
       title: "Check-ins Today",
-      value: stats?.check_ins_today ?? "—",
+      value: stats?.check_ins_today ?? "\u2014",
       icon: BarChart3,
     },
   ];

@@ -50,3 +50,30 @@ async def list_notes(
     items = list(result.scalars().all())
     items, pagination = build_pagination_meta(items, limit, "created_at")
     return items, pagination
+
+
+async def update_note(
+    db: AsyncSession, *, note_id: uuid.UUID, content: str
+) -> Note | None:
+    result = await db.execute(
+        select(Note).where(Note.note_id == note_id)
+    )
+    note = result.scalar_one_or_none()
+    if not note:
+        return None
+    note.content = content
+    await db.commit()
+    await db.refresh(note)
+    return note
+
+
+async def delete_note(db: AsyncSession, *, note_id: uuid.UUID) -> bool:
+    result = await db.execute(
+        select(Note).where(Note.note_id == note_id)
+    )
+    note = result.scalar_one_or_none()
+    if not note:
+        return False
+    await db.delete(note)
+    await db.commit()
+    return True

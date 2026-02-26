@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -100,3 +100,27 @@ async def list_workout_notes(
         "data": [NoteResponse.model_validate(n) for n in items],
         "pagination": pagination,
     }
+
+
+@router.put("/v1/notes/{note_id}", response_model=dict)
+async def update_note(
+    note_id: uuid.UUID,
+    body: NoteCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    note = await note_service.update_note(
+        db, note_id=note_id, content=body.content
+    )
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return {"data": NoteResponse.model_validate(note)}
+
+
+@router.delete("/v1/notes/{note_id}", status_code=204)
+async def delete_note(
+    note_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await note_service.delete_note(db, note_id=note_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Note not found")

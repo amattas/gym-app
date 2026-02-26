@@ -1,3 +1,14 @@
+import uuid
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import func as sa_func
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from gym_api.models.measurement import Measurement, MeasurementType
+from gym_api.models.workout import Workout, WorkoutExercise, WorkoutSet, WorkoutStatus
+
+
 def compute_workout_analytics(
     exercises: list[dict],
     sets_by_exercise: dict[str, list[dict]],
@@ -42,3 +53,144 @@ def compute_workout_analytics(
         "total_reps": total_reps,
         "exercises": exercise_summaries,
     }
+
+
+async def get_client_workout_stats(
+    db: AsyncSession,
+    *,
+    client_id: uuid.UUID,
+    gym_id: uuid.UUID,
+    days: int = 30,
+) -> dict:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    total_result = await db.execute(
+        select(sa_func.count()).where(
+            Workout.client_id == client_id,
+            Workout.gym_id == gym_id,
+            Workout.created_at >= since,
+        )
+    )
+    total_workouts = total_result.scalar() or 0
+
+    completed_result = await db.execute(
+        select(sa_func.count()).where(
+            Workout.client_id == client_id,
+            Workout.gym_id == gym_id,
+            Workout.created_at >= since,
+            Workout.status == WorkoutStatus.completed,
+        )
+    )
+    completed_workouts = completed_result.scalar() or 0
+
+    avg_result = await db.execute(
+        select(
+            sa_func.avg(
+                sa_func.extract("epoch", Workout.ended_at)
+                - sa_func.extract("epoch", Workout.started_at)
+            )
+        ).where(
+            Workout.client_id == client_id,
+            Workout.gym_id == gym_id,
+            Workout.created_at >= since,
+            Workout.status == WorkoutStatus.completed,
+            Workout.started_at.isnot(None),
+            Workout.ended_at.isnot(None),
+        )
+    )
+    avg_seconds = avg_result.scalar()
+    avg_duration = round(avg_seconds / 60, 1) if avg_seconds else None
+
+    completion_rate = (
+        round(completed_workouts / total_workouts, 2)
+        if total_workouts > 0
+        else 0.0
+    )
+
+    return {
+        "total_workouts": total_workouts,
+        "completed_workouts": completed_workouts,
+        "avg_duration_minutes": avg_duration,
+        "completion_rate": completion_rate,
+    }
+
+
+async def get_client_volume_trend(
+    db: AsyncSession,
+    *,
+    client_id: uuid.UUID,
+    gym_id: uuid.UUID,
+    days: int = 30,
+) -> list[dict]:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    result = await db.execute(
+        select(Workout).where(
+            Workout.client_id == client_id,
+            Workout.gym_id == gym_id,
+            Workout.created_at >= since,
+            Workout.status == WorkoutStatus.completed,
+        ).order_by(Workout.created_at)
+    )
+    workouts = result.scalars().all()
+
+    daily_volumes: dict[str, float] = {}
+    for w in workouts:
+        day_key = w.created_at.date().isoformat()
+        ex_result = await db.execute(
+            select(WorkoutExercise).where(
+                WorkoutExercise.workout_id == w.workout_id
+            )
+        )
+        exercises = ex_result.scalars().all()
+        volume = 0.0
+        for ex in exercises:
+            sets_result = await db.execute(
+                select(WorkoutSet).where(
+                    WorkoutSet.workout_exercise_id
+                    == ex.workout_exercise_id
+                )
+            )
+            for s in sets_result.scalars().all():
+                wt = float(s.weight_kg) if s.weight_kg else 0.0
+                r = s.reps or 0
+                if s.completed is not False:
+                    volume += wt * r
+        daily_volumes[day_key] = (
+            daily_volumes.get(day_key, 0.0) + volume
+        )
+
+    return [
+        {"date": d, "total_volume_kg": round(v, 2)}
+        for d, v in sorted(daily_volumes.items())
+    ]
+
+
+async def get_client_measurement_trend(
+    db: AsyncSession,
+    *,
+    client_id: uuid.UUID,
+    measurement_type: str,
+    days: int = 90,
+) -> list[dict]:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    result = await db.execute(
+        select(Measurement).where(
+            Measurement.client_id == client_id,
+            Measurement.type == MeasurementType(measurement_type),
+            Measurement.measured_at >= since,
+        ).order_by(Measurement.measured_at)
+    )
+    measurements = result.scalars().all()
+
+    return [
+        {
+            "date": m.measured_at,
+            "value": float(m.value),
+            "unit": m.unit,
+        }
+        for m in measurements
+    ]
+
+

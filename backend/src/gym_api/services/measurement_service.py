@@ -78,3 +78,40 @@ async def list_measurements(
     items = list(result.scalars().all())
     items, pagination = build_pagination_meta(items, limit, "measured_at")
     return items, pagination
+
+
+async def get_latest_measurements(
+    db: AsyncSession, *, client_id: uuid.UUID, gym_id: uuid.UUID
+) -> list[Measurement]:
+    results = []
+    for mt in MeasurementType:
+        result = await db.execute(
+            select(Measurement)
+            .where(
+                Measurement.client_id == client_id,
+                Measurement.gym_id == gym_id,
+                Measurement.type == mt,
+            )
+            .order_by(Measurement.measured_at.desc())
+            .limit(1)
+        )
+        m = result.scalar_one_or_none()
+        if m:
+            results.append(m)
+    return results
+
+
+async def delete_measurement(
+    db: AsyncSession, *, measurement_id: uuid.UUID
+) -> bool:
+    result = await db.execute(
+        select(Measurement).where(
+            Measurement.measurement_id == measurement_id
+        )
+    )
+    m = result.scalar_one_or_none()
+    if not m:
+        return False
+    await db.delete(m)
+    await db.commit()
+    return True

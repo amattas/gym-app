@@ -8,6 +8,7 @@ from gym_api.database import get_db
 from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.models.user import User
+from gym_api.schemas.analytics import OccupancyHistoryPoint
 from gym_api.schemas.check_in import CheckInCreate, CheckInResponse, OccupancyResponse
 from gym_api.services import check_in_service
 
@@ -84,5 +85,30 @@ async def get_occupancy(
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await check_in_service.get_active_occupancy(db, gym_id, location_id)
-    return {"data": OccupancyResponse(location_id=location_id, active_count=count)}
+    count = await check_in_service.get_active_occupancy(
+        db, gym_id, location_id
+    )
+    return {
+        "data": OccupancyResponse(
+            location_id=location_id, active_count=count
+        )
+    }
+
+
+@router.get(
+    "/v1/locations/{location_id}/occupancy/history",
+    response_model=dict,
+)
+async def get_occupancy_history(
+    location_id: uuid.UUID,
+    date: datetime = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    history = await check_in_service.get_occupancy_history(
+        db, location_id=location_id, date=date
+    )
+    return {
+        "data": [OccupancyHistoryPoint(**h) for h in history]
+    }
+
+

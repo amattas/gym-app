@@ -1,11 +1,12 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func as sa_func
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.models.check_in import GymCheckIn
+from gym_api.models.client import Client, ClientStatus
 from gym_api.models.client_membership import ClientMembership, MembershipStatus
 from gym_api.models.schedule import Schedule, ScheduleStatus
 from gym_api.models.workout import Workout, WorkoutStatus
@@ -17,8 +18,18 @@ async def get_gym_dashboard(
     *,
     period_days: int = 30,
 ) -> dict:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     start = now - timedelta(days=period_days)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    total_clients_result = await db.execute(
+        select(sa_func.count()).where(
+            Client.gym_id == gym_id,
+            Client.status == ClientStatus.active,
+            Client.deleted_at.is_(None),
+        )
+    )
+    total_clients = total_clients_result.scalar() or 0
 
     active_members_result = await db.execute(
         select(sa_func.count()).where(
@@ -26,7 +37,7 @@ async def get_gym_dashboard(
             ClientMembership.status == MembershipStatus.active,
         )
     )
-    active_members = active_members_result.scalar() or 0
+    active_memberships = active_members_result.scalar() or 0
 
     check_ins_result = await db.execute(
         select(sa_func.count()).where(
@@ -35,6 +46,14 @@ async def get_gym_dashboard(
         )
     )
     total_check_ins = check_ins_result.scalar() or 0
+
+    check_ins_today_result = await db.execute(
+        select(sa_func.count()).where(
+            GymCheckIn.gym_id == gym_id,
+            GymCheckIn.checked_in_at >= today_start,
+        )
+    )
+    check_ins_today = check_ins_today_result.scalar() or 0
 
     workouts_result = await db.execute(
         select(sa_func.count()).where(
@@ -52,13 +71,35 @@ async def get_gym_dashboard(
             Schedule.scheduled_start >= start,
         )
     )
-    total_sessions = sessions_result.scalar() or 0
+    completed_sessions = sessions_result.scalar() or 0
+
+    schedules_today_result = await db.execute(
+        select(sa_func.count()).where(
+            Schedule.gym_id == gym_id,
+            Schedule.scheduled_start >= today_start,
+            Schedule.scheduled_start < today_start + timedelta(days=1),
+        )
+    )
+    schedules_today = schedules_today_result.scalar() or 0
+
+    new_clients_result = await db.execute(
+        select(sa_func.count()).where(
+            Client.gym_id == gym_id,
+            Client.created_at >= start,
+            Client.deleted_at.is_(None),
+        )
+    )
+    new_clients_this_period = new_clients_result.scalar() or 0
 
     return {
-        "active_memberships": active_members,
+        "total_clients": total_clients,
+        "active_memberships": active_memberships,
         "total_check_ins": total_check_ins,
+        "check_ins_today": check_ins_today,
         "total_workouts": total_workouts,
-        "completed_sessions": total_sessions,
+        "completed_sessions": completed_sessions,
+        "schedules_today": schedules_today,
+        "new_clients_this_period": new_clients_this_period,
         "period_days": period_days,
     }
 
@@ -74,9 +115,15 @@ async def get_trainer_utilization(
         select(
             Schedule.trainer_id,
             sa_func.count().label("total"),
-            sa_func.count().filter(Schedule.status == ScheduleStatus.completed).label("completed"),
-            sa_func.count().filter(Schedule.status == ScheduleStatus.no_show).label("no_shows"),
-            sa_func.count().filter(Schedule.status == ScheduleStatus.canceled).label("canceled"),
+            sa_func.count()
+            .filter(Schedule.status == ScheduleStatus.completed)
+            .label("completed"),
+            sa_func.count()
+            .filter(Schedule.status == ScheduleStatus.no_show)
+            .label("no_shows"),
+            sa_func.count()
+            .filter(Schedule.status == ScheduleStatus.canceled)
+            .label("canceled"),
         )
         .where(
             Schedule.gym_id == gym_id,
@@ -126,7 +173,11 @@ async def get_client_adherence(
     )
     total_completed = completed_result.scalar() or 0
 
-    adherence_rate = (total_completed / total_scheduled * 100) if total_scheduled > 0 else 0
+    adherence_rate = (
+        (total_completed / total_scheduled * 100)
+        if total_scheduled > 0
+        else 0
+    )
 
     return {
         "client_id": str(client_id),

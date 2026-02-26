@@ -23,6 +23,16 @@ class AccountResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AccountUpdate(BaseModel):
+    billing_email: str | None = Field(None, max_length=255)
+    billing_address: dict | None = None
+    account_type: str | None = None
+
+
+class AccountMemberAdd(BaseModel):
+    client_id: uuid.UUID
+
+
 class MemberAdd(BaseModel):
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
