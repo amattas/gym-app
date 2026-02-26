@@ -74,6 +74,18 @@ async def list_schedules(
 
 
 async def update_schedule(db: AsyncSession, schedule: Schedule, **kwargs) -> Schedule:
+    booking_fields = {"scheduled_start", "scheduled_end", "trainer_id"}
+    if booking_fields & kwargs.keys():
+        trainer_id = kwargs.get("trainer_id") or schedule.trainer_id
+        start = kwargs.get("scheduled_start") or schedule.scheduled_start
+        end = kwargs.get("scheduled_end") or schedule.scheduled_end
+        if trainer_id and start and end:
+            conflict = await _check_double_booking(
+                db, trainer_id, start, end, exclude_schedule_id=schedule.schedule_id
+            )
+            if conflict:
+                raise ValueError("Trainer has a conflicting schedule at this time")
+
     for key, value in kwargs.items():
         if value is not None:
             setattr(schedule, key, value)

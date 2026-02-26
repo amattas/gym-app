@@ -88,7 +88,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Gym API", version="0.1.0", lifespan=lifespan)
 
 # CORS (must be added before other middleware)
-create_cors_middleware(app)
+create_cors_middleware(app, cors_allowed_origins=settings.cors_allowed_origins)
 
 # Metrics
 setup_metrics(app)
