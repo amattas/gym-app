@@ -22,7 +22,7 @@ class ClientProgram(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    program_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    program_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
     status: Mapped[ClientProgramStatus] = mapped_column(
         Enum(ClientProgramStatus), default=ClientProgramStatus.active, nullable=False
     )
@@ -30,7 +30,7 @@ class ClientProgram(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     assigned_by_trainer_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True
+        UUID(as_uuid=True), index=True, nullable=True
     )
 
 
@@ -54,7 +54,7 @@ class ProgramDayExercise(Base):
     program_day_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), index=True, nullable=False
     )
-    exercise_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    exercise_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, nullable=False)
     default_sets: Mapped[int | None] = mapped_column(Integer, nullable=True)
     default_reps: Mapped[int | None] = mapped_column(Integer, nullable=True)

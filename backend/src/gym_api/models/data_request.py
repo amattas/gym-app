@@ -31,7 +31,7 @@ class DataExportRequest(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     gym_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
     status: Mapped[ExportStatus] = mapped_column(
         Enum(ExportStatus), default=ExportStatus.pending, nullable=False
     )
@@ -50,7 +50,7 @@ class DeletionRequest(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     gym_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
-    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True, nullable=False)
     status: Mapped[DeletionStatus] = mapped_column(
         Enum(DeletionStatus), default=DeletionStatus.pending, nullable=False
     )

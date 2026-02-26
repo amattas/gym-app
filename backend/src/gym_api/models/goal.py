@@ -32,7 +32,7 @@ class ClientGoal(Base):
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by_trainer_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True
+        UUID(as_uuid=True), index=True, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
