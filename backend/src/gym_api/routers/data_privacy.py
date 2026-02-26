@@ -51,7 +51,8 @@ async def create_data_export(
     request = await data_export_service.create_export_request(
         db, gym_id=gym_id, client_id=client_id
     )
-    return {"data": ExportRequestResponse.model_validate(request)}
+    processed = await data_export_service.process_export(db, request.export_id)
+    return {"data": ExportRequestResponse.model_validate(processed or request)}
 
 
 @router.get("/v1/data-exports/{export_id}/status", response_model=dict)

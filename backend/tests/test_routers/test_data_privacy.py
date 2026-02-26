@@ -57,14 +57,22 @@ def _auth_override():
 @pytest.mark.asyncio
 async def test_create_data_export(client):
     export = _make_export_request()
-    with patch(
-        "gym_api.routers.data_privacy.data_export_service.create_export_request",
-        new_callable=AsyncMock,
-    ) as mock:
-        mock.return_value = export
+    completed = _make_export_request(status="completed")
+    with (
+        patch(
+            "gym_api.routers.data_privacy.data_export_service.create_export_request",
+            new_callable=AsyncMock,
+            return_value=export,
+        ),
+        patch(
+            "gym_api.routers.data_privacy.data_export_service.process_export",
+            new_callable=AsyncMock,
+            return_value=completed,
+        ),
+    ):
         resp = await client.post(f"/v1/clients/{CLIENT_ID}/data-export")
     assert resp.status_code == 201
-    assert resp.json()["data"]["status"] == "pending"
+    assert resp.json()["data"]["status"] == "completed"
 
 
 @pytest.mark.asyncio
