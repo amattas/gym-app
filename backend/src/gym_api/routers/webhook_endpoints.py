@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.services import webhook_endpoint_service
 
 router = APIRouter(tags=["webhooks"])
@@ -57,9 +58,10 @@ async def list_webhooks(
 async def update_webhook(
     webhook_id: uuid.UUID,
     body: WebhookUpdate,
+    gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
-    webhook = await webhook_endpoint_service.get_webhook(db, webhook_id, webhook_id)
+    webhook = await webhook_endpoint_service.get_webhook(db, gym_id, webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
     webhook = await webhook_endpoint_service.update_webhook(
@@ -71,9 +73,10 @@ async def update_webhook(
 @router.delete("/v1/webhooks/{webhook_id}", status_code=204)
 async def delete_webhook(
     webhook_id: uuid.UUID,
+    gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
-    webhook = await webhook_endpoint_service.get_webhook(db, webhook_id, webhook_id)
+    webhook = await webhook_endpoint_service.get_webhook(db, gym_id, webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
     await webhook_endpoint_service.delete_webhook(db, webhook)

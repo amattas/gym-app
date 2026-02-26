@@ -39,7 +39,7 @@ interface Location {
 }
 
 interface Occupancy {
-  current_count: number;
+  active_count: number;
   capacity?: number;
 }
 
@@ -169,7 +169,7 @@ export default function CheckInsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">
-                {occupancy.current_count}
+                {occupancy.active_count}
                 {occupancy.capacity && (
                   <span className="text-lg text-muted-foreground ml-1">
                     / {occupancy.capacity}

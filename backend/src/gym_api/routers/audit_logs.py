@@ -7,10 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
 from gym_api.dependencies.auth import require_role
+from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.models.user import User, UserRole
 from gym_api.services import audit_service
 
-router = APIRouter(prefix="/v1/gyms/{gym_id}/audit-logs", tags=["audit-logs"])
+router = APIRouter(tags=["audit-logs"])
 
 
 class AuditLogResponse(BaseModel):
@@ -27,15 +28,15 @@ class AuditLogResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-@router.get("", response_model=dict)
+@router.get("/v1/audit-logs", response_model=dict)
 async def list_audit_logs(
-    gym_id: uuid.UUID,
     action: str | None = Query(None),
     resource_type: str | None = Query(None),
     start_date: datetime | None = Query(None),
     end_date: datetime | None = Query(None),
     cursor: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
+    gym_id: uuid.UUID = Depends(get_gym_context),
     user: User = Depends(require_role(UserRole.gym_admin, UserRole.platform_admin)),
     db: AsyncSession = Depends(get_db),
 ):
