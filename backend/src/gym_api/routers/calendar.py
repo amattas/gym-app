@@ -6,6 +6,7 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.services import busyness_service, ical_service, reporting_service
 
@@ -100,6 +101,7 @@ async def get_dashboard(
     gym_id: uuid.UUID,
     period: int = Query(30, ge=1, le=365),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     data = await reporting_service.get_gym_dashboard(db, gym_id, period_days=period)
     return {"data": data}
@@ -111,6 +113,7 @@ async def get_trainer_analytics(
     start_date: datetime = Query(...),
     end_date: datetime = Query(...),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     data = await reporting_service.get_trainer_utilization(
         db, gym_id, start_date=start_date, end_date=end_date

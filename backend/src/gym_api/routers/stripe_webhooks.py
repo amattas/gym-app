@@ -1,6 +1,9 @@
+import hashlib
+import hmac
 import logging
+import os
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,13 +17,37 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/webhooks", tags=["webhooks"])
 
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+
+def _verify_stripe_signature(payload: bytes, sig_header: str, secret: str) -> bool:
+    if not secret:
+        return True
+    parts = dict(item.split("=", 1) for item in sig_header.split(",") if "=" in item)
+    timestamp = parts.get("t", "")
+    signature = parts.get("v1", "")
+    if not timestamp or not signature:
+        return False
+    signed_payload = f"{timestamp}.".encode() + payload
+    expected = hmac.new(secret.encode(), signed_payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
 
 @router.post("/stripe")
 async def handle_stripe_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    body = await request.json()
+    raw_body = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    if STRIPE_WEBHOOK_SECRET and not _verify_stripe_signature(
+        raw_body, sig_header, STRIPE_WEBHOOK_SECRET
+    ):
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    import json
+
+    body = json.loads(raw_body)
     event_type = body.get("type", "")
     data_obj = body.get("data", {}).get("object", {})
 
