@@ -29,6 +29,7 @@ async def get_trainer_busyness(
     trainer_id: uuid.UUID,
     date: datetime = Query(...),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     slots = await busyness_service.get_trainer_busyness(db, trainer_id, date)
     return {"data": slots}
@@ -100,9 +101,13 @@ async def get_client_ics(
 async def get_dashboard(
     gym_id: uuid.UUID,
     period: int = Query(30, ge=1, le=365),
+    gym_context: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
-    _user=Depends(get_current_user),
 ):
+    if gym_id != gym_context:
+        raise HTTPException(
+            status_code=403, detail="Access denied to this gym"
+        )
     data = await reporting_service.get_gym_dashboard(db, gym_id, period_days=period)
     return {"data": data}
 
@@ -112,9 +117,13 @@ async def get_trainer_analytics(
     gym_id: uuid.UUID,
     start_date: datetime = Query(...),
     end_date: datetime = Query(...),
+    gym_context: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
-    _user=Depends(get_current_user),
 ):
+    if gym_id != gym_context:
+        raise HTTPException(
+            status_code=403, detail="Access denied to this gym"
+        )
     data = await reporting_service.get_trainer_utilization(
         db, gym_id, start_date=start_date, end_date=end_date
     )
