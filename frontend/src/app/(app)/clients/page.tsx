@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Client {
   client_id: string;
@@ -36,7 +37,8 @@ export default function ClientsPage() {
       const params = search ? `?search=${encodeURIComponent(search)}` : "";
       const res = await api.get<{ data: Client[] }>(`/v1/clients${params}`);
       setClients(res.data);
-    } catch {
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load clients");
       setClients([]);
     } finally {
       setIsLoading(false);

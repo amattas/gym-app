@@ -71,7 +71,8 @@ export default function SchedulesPage() {
         `/v1/schedules${qs ? `?${qs}` : ""}`
       );
       setSchedules(res.data);
-    } catch {
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load schedules");
       setSchedules([]);
     } finally {
       setIsLoading(false);

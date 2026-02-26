@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Workout {
   workout_id: string;
@@ -40,7 +41,9 @@ export default function WorkoutsPage() {
     api
       .get<{ data: Workout[] }>("/v1/workouts")
       .then((res) => setWorkouts(res.data))
-      .catch(() => {})
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load workouts");
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
