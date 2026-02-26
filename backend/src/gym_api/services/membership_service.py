@@ -17,6 +17,7 @@ async def create_membership(
     plan_template_id: uuid.UUID,
     started_at: datetime | None = None,
     base_membership_id: uuid.UUID | None = None,
+    initial_status: MembershipStatus | None = None,
 ) -> ClientMembership:
     template = await db.execute(
         select(PlanTemplate).where(
@@ -57,12 +58,12 @@ async def create_membership(
     elif expires_at:
         period_end = expires_at
 
-    initial_status = MembershipStatus.active
+    computed_status = MembershipStatus.active
     payment_config = template.payment_config or {}
     trial_days = payment_config.get("trial_days")
     pause_info = None
     if trial_days and trial_days > 0:
-        initial_status = MembershipStatus.trial
+        computed_status = MembershipStatus.trial
         trial_end = start + timedelta(days=trial_days)
         pause_info = {"trial_ends_at": trial_end.isoformat()}
 
@@ -71,7 +72,7 @@ async def create_membership(
         client_id=client_id,
         plan_template_id=plan_template_id,
         plan_type=template.plan_type.value,
-        status=initial_status,
+        status=initial_status if initial_status is not None else computed_status,
         started_at=start,
         expires_at=expires_at,
         visit_entitlement=visit_entitlement,

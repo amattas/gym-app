@@ -222,6 +222,8 @@ async def create_checkout(
 async def handle_payment_success(
     db: AsyncSession, *, payment_id: uuid.UUID
 ) -> Payment | None:
+    from gym_api.models.client_membership import ClientMembership, MembershipStatus
+
     result = await db.execute(
         select(Payment).where(Payment.payment_id == payment_id)
     )
@@ -236,6 +238,16 @@ async def handle_payment_success(
         invoice = inv_result.scalar_one_or_none()
         if invoice:
             invoice.status = InvoiceStatus.paid
+            if invoice.membership_id:
+                m_result = await db.execute(
+                    select(ClientMembership).where(
+                        ClientMembership.client_membership_id == invoice.membership_id,
+                        ClientMembership.status == MembershipStatus.pending,
+                    )
+                )
+                membership = m_result.scalar_one_or_none()
+                if membership:
+                    membership.status = MembershipStatus.active
     await db.commit()
     await db.refresh(payment)
     return payment

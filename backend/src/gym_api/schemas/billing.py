@@ -59,6 +59,13 @@ class CheckoutCreate(BaseModel):
     discount_code: str | None = None
 
 
+class SessionPackPurchase(BaseModel):
+    plan_template_id: uuid.UUID
+    client_id: uuid.UUID
+    payment_method_id: uuid.UUID | None = None
+    discount_code: str | None = None
+
+
 class CheckoutResponse(BaseModel):
     invoice_id: uuid.UUID
     payment_id: uuid.UUID | None = None
