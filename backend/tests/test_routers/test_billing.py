@@ -282,6 +282,102 @@ async def test_delete_discount_code(client):
 
 
 @pytest.mark.asyncio
+async def test_purchase_session_pack(client):
+    from gym_api.models.plan_template import PlanType
+
+    template = SimpleNamespace(
+        plan_template_id=uuid.uuid4(),
+        gym_id=GYM_ID,
+        name="10 Session Pack",
+        plan_type=PlanType.session_pack,
+        payment_config={"price_cents": 15000},
+        visit_entitlement={"total_visits": 10},
+    )
+    membership = SimpleNamespace(
+        client_membership_id=uuid.uuid4(),
+        gym_id=GYM_ID,
+        client_id=uuid.uuid4(),
+        plan_template_id=template.plan_template_id,
+        plan_type="session_pack",
+        status="pending",
+        started_at=datetime.now(timezone.utc),
+        expires_at=None,
+        visit_entitlement={"total_visits": 10},
+        visits_used_this_period=0,
+        total_visits_remaining=10,
+        current_period_start=None,
+        current_period_end=None,
+        pause_info=None,
+        cancellation_info=None,
+        base_membership_id=None,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    checkout_result = {
+        "invoice_id": uuid.uuid4(),
+        "payment_id": uuid.uuid4(),
+        "client_secret": "pi_secret_test",
+        "status": "pending",
+        "total": 15000,
+        "currency": "usd",
+    }
+    with (
+        patch(
+            "gym_api.routers.billing.plan_template_service.get_plan_template",
+            new_callable=AsyncMock,
+            return_value=template,
+        ),
+        patch(
+            "gym_api.routers.billing.membership_service.create_membership",
+            new_callable=AsyncMock,
+            return_value=membership,
+        ),
+        patch(
+            "gym_api.routers.billing.stripe_service.create_checkout",
+            new_callable=AsyncMock,
+            return_value=checkout_result,
+        ),
+    ):
+        resp = await client.post(
+            "/v1/billing/session-packs/purchase",
+            json={
+                "plan_template_id": str(template.plan_template_id),
+                "client_id": str(uuid.uuid4()),
+            },
+        )
+    assert resp.status_code == 201
+    data = resp.json()["data"]
+    assert data["total"] == 15000
+    assert "membership_id" in data
+
+
+@pytest.mark.asyncio
+async def test_purchase_session_pack_wrong_type(client):
+    from gym_api.models.plan_template import PlanType
+
+    template = SimpleNamespace(
+        plan_template_id=uuid.uuid4(),
+        gym_id=GYM_ID,
+        name="Monthly Membership",
+        plan_type=PlanType.membership,
+        payment_config={"price_cents": 5000},
+    )
+    with patch(
+        "gym_api.routers.billing.plan_template_service.get_plan_template",
+        new_callable=AsyncMock,
+        return_value=template,
+    ):
+        resp = await client.post(
+            "/v1/billing/session-packs/purchase",
+            json={
+                "plan_template_id": str(template.plan_template_id),
+                "client_id": str(uuid.uuid4()),
+            },
+        )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_validate_discount_code(client):
     with patch(
         "gym_api.routers.billing.discount_service.validate_discount_code",

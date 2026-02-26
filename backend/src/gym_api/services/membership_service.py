@@ -17,6 +17,7 @@ async def create_membership(
     plan_template_id: uuid.UUID,
     started_at: datetime | None = None,
     base_membership_id: uuid.UUID | None = None,
+    initial_status: MembershipStatus | None = None,
 ) -> ClientMembership:
     template = await db.execute(
         select(PlanTemplate).where(
@@ -57,12 +58,21 @@ async def create_membership(
     elif expires_at:
         period_end = expires_at
 
+    computed_status = MembershipStatus.active
+    payment_config = template.payment_config or {}
+    trial_days = payment_config.get("trial_days")
+    pause_info = None
+    if trial_days and trial_days > 0:
+        computed_status = MembershipStatus.trial
+        trial_end = start + timedelta(days=trial_days)
+        pause_info = {"trial_ends_at": trial_end.isoformat()}
+
     membership = ClientMembership(
         gym_id=gym_id,
         client_id=client_id,
         plan_template_id=plan_template_id,
         plan_type=template.plan_type.value,
-        status=MembershipStatus.active,
+        status=initial_status if initial_status is not None else computed_status,
         started_at=start,
         expires_at=expires_at,
         visit_entitlement=visit_entitlement,
@@ -70,6 +80,7 @@ async def create_membership(
         total_visits_remaining=total_visits,
         current_period_start=period_start,
         current_period_end=period_end,
+        pause_info=pause_info,
         base_membership_id=base_membership_id,
     )
     db.add(membership)
@@ -253,6 +264,29 @@ async def reset_period_visits(
     await db.commit()
     await db.refresh(membership)
     return membership
+
+
+async def process_trial_conversions(db: AsyncSession) -> int:
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        select(ClientMembership).where(
+            ClientMembership.status == MembershipStatus.trial,
+        )
+    )
+    trials = result.scalars().all()
+    converted = 0
+    for m in trials:
+        trial_info = m.pause_info or {}
+        trial_ends_str = trial_info.get("trial_ends_at")
+        if trial_ends_str:
+            trial_ends = datetime.fromisoformat(trial_ends_str)
+            if trial_ends <= now:
+                m.status = MembershipStatus.active
+                m.pause_info = None
+                converted += 1
+    if converted:
+        await db.commit()
+    return converted
 
 
 async def process_expired_memberships(db: AsyncSession) -> int:

@@ -12,6 +12,7 @@ from gym_api.database import Base
 class PlanType(str, enum.Enum):
     membership = "membership"
     punch_card = "punch_card"
+    session_pack = "session_pack"
     drop_in = "drop_in"
 
 

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from gym_api.database import get_db
 from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
+from gym_api.models.client_membership import MembershipStatus
+from gym_api.models.plan_template import PlanType
 from gym_api.schemas.billing import (
     CheckoutCreate,
     DiscountCodeCreate,
@@ -18,10 +20,17 @@ from gym_api.schemas.billing import (
     PaymentMethodResponse,
     PaymentResponse,
     ProcessingFeeUpdate,
+    SessionPackPurchase,
     StripeConnectCreate,
     StripeConnectResponse,
 )
-from gym_api.services import discount_service, invoice_service, stripe_service
+from gym_api.services import (
+    discount_service,
+    invoice_service,
+    membership_service,
+    plan_template_service,
+    stripe_service,
+)
 
 router = APIRouter(prefix="/v1/billing", tags=["billing"])
 
@@ -112,10 +121,18 @@ async def create_checkout(
     db: AsyncSession = Depends(get_db),
     _user=Depends(get_current_user),
 ):
+    m = await membership_service.get_membership(db, gym_id, body.membership_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Membership not found")
+
+    template = await plan_template_service.get_plan_template(db, gym_id, m.plan_template_id)
+    payment_config = (template.payment_config or {}) if template else {}
+    subtotal = payment_config.get("price_cents", 0)
+
     discount_amount = 0
     if body.discount_code:
         discount_amount, _ = await discount_service.apply_discount(
-            db, gym_id, code_str=body.discount_code, subtotal=0
+            db, gym_id, code_str=body.discount_code, subtotal=subtotal
         )
 
     result = await stripe_service.create_checkout(
@@ -123,10 +140,58 @@ async def create_checkout(
         gym_id=gym_id,
         account_id=_user.user_id,
         membership_id=body.membership_id,
-        subtotal=0,
+        subtotal=subtotal,
         discount_amount=discount_amount,
-        description="Membership checkout",
+        description=f"Payment for {template.name}" if template else "Membership checkout",
     )
+    return {"data": result}
+
+
+@router.post("/session-packs/purchase", status_code=201, response_model=dict)
+async def purchase_session_pack(
+    body: SessionPackPurchase,
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
+):
+    template = await plan_template_service.get_plan_template(db, gym_id, body.plan_template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Plan template not found")
+    if template.plan_type not in (PlanType.session_pack, PlanType.punch_card):
+        raise HTTPException(status_code=400, detail="Plan template is not a session pack")
+
+    payment_config = template.payment_config or {}
+    price_cents = payment_config.get("price_cents", 0)
+    if price_cents <= 0:
+        raise HTTPException(status_code=400, detail="Plan template has no price configured")
+
+    try:
+        m = await membership_service.create_membership(
+            db,
+            gym_id=gym_id,
+            client_id=body.client_id,
+            plan_template_id=body.plan_template_id,
+            initial_status=MembershipStatus.pending,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    discount_amount = 0
+    if body.discount_code:
+        discount_amount, _ = await discount_service.apply_discount(
+            db, gym_id, code_str=body.discount_code, subtotal=price_cents
+        )
+
+    result = await stripe_service.create_checkout(
+        db,
+        gym_id=gym_id,
+        account_id=_user.user_id,
+        membership_id=m.client_membership_id,
+        subtotal=price_cents,
+        discount_amount=discount_amount,
+        description=f"Session pack: {template.name}",
+    )
+    result["membership_id"] = m.client_membership_id
     return {"data": result}
 
 

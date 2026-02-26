@@ -51,7 +51,7 @@ async def test_list_audit_logs(client):
         new_callable=AsyncMock,
     ) as mock:
         mock.return_value = (logs, {"next_cursor": None, "has_more": False, "limit": 20})
-        resp = await client.get(f"/v1/gyms/{GYM_ID}/audit-logs")
+        resp = await client.get("/v1/audit-logs")
     assert resp.status_code == 200
     assert len(resp.json()["data"]) == 2
 
@@ -65,7 +65,7 @@ async def test_list_audit_logs_with_filters(client):
     ) as mock:
         mock.return_value = (logs, {"next_cursor": None, "has_more": False, "limit": 20})
         resp = await client.get(
-            f"/v1/gyms/{GYM_ID}/audit-logs?action=client.created&resource_type=client"
+            "/v1/audit-logs?action=client.created&resource_type=client"
         )
     assert resp.status_code == 200
     assert len(resp.json()["data"]) == 1
