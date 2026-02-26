@@ -85,7 +85,15 @@ async def lifespan(app: FastAPI):
     logging.getLogger(__name__).info("Shutdown complete")
 
 
-app = FastAPI(title="Gym API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="Gym API",
+    description=(
+        "Backend API for the gym management platform"
+        " — memberships, scheduling, workouts, billing, and analytics."
+    ),
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
 # CORS (must be added before other middleware)
 create_cors_middleware(app, cors_allowed_origins=settings.cors_allowed_origins)
