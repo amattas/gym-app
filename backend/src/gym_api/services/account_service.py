@@ -33,6 +33,7 @@ async def list_account_members(
     result = await db.execute(
         select(Client).where(
             Client.gym_id == gym_id,
+            Client.account_id == account_id,
             Client.deleted_at.is_(None),
         )
     )
@@ -48,8 +49,7 @@ async def add_member(
     client = result.scalar_one_or_none()
     if not client:
         return None
-    if hasattr(client, "account_id"):
-        client.account_id = account_id
+    client.account_id = account_id
     await db.commit()
     await db.refresh(client)
     return client
@@ -59,23 +59,32 @@ async def remove_member(
     db: AsyncSession, *, account_id: uuid.UUID, client_id: uuid.UUID
 ) -> Client | None:
     result = await db.execute(
-        select(Client).where(Client.client_id == client_id)
+        select(Client).where(
+            Client.client_id == client_id,
+            Client.account_id == account_id,
+        )
     )
     client = result.scalar_one_or_none()
     if not client:
         return None
-    if hasattr(client, "account_id"):
-        client.account_id = None
+    client.account_id = None
     await db.commit()
     await db.refresh(client)
     return client
 
 
 async def update_account(
-    db: AsyncSession, *, account_id: uuid.UUID, **kwargs
+    db: AsyncSession,
+    *,
+    account_id: uuid.UUID,
+    gym_id: uuid.UUID,
+    **kwargs,
 ) -> Account | None:
     result = await db.execute(
-        select(Account).where(Account.account_id == account_id)
+        select(Account).where(
+            Account.account_id == account_id,
+            Account.gym_id == gym_id,
+        )
     )
     account = result.scalar_one_or_none()
     if not account:

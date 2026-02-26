@@ -121,6 +121,7 @@ async def update_account(
     account = await account_service.update_account(
         db,
         account_id=account_id,
+        gym_id=gym_id,
         **body.model_dump(exclude_unset=True),
     )
     return {"data": AccountResponse.model_validate(account)}

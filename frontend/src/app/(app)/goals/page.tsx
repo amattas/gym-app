@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Target, Search, Plus, Loader2 } from "lucide-react";
+import { Target, Search, Plus, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +48,18 @@ export default function GoalsPage() {
   const [targetDate, setTargetDate] = useState("");
   const [notes, setNotes] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [editGoal, setEditGoal] = useState<Goal | null>(null);
+  const [editCurrentValue, setEditCurrentValue] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  async function refreshGoals() {
+    if (!searchedClientId) return;
+    const res = await api.get<{ data: Goal[] }>(
+      `/v1/clients/${encodeURIComponent(searchedClientId)}/goals`
+    );
+    setGoals(res.data);
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -83,15 +95,65 @@ export default function GoalsPage() {
       setTargetValue("");
       setTargetDate("");
       setNotes("");
-      const res = await api.get<{ data: Goal[] }>(
-        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals`
-      );
-      setGoals(res.data);
+      await refreshGoals();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create goal");
     } finally {
       setIsCreating(false);
     }
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editGoal) return;
+    setIsUpdating(true);
+    try {
+      await api.put(
+        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${editGoal.goal_id}`,
+        {
+          current_value: parseFloat(editCurrentValue),
+          notes: editNotes || null,
+        }
+      );
+      toast.success("Goal updated");
+      setEditGoal(null);
+      await refreshGoals();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  async function handleStatusChange(goal: Goal, status: string) {
+    try {
+      await api.put(
+        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${goal.goal_id}`,
+        { status }
+      );
+      toast.success(`Goal marked as ${status}`);
+      await refreshGoals();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
+    }
+  }
+
+  async function handleDelete(goal: Goal) {
+    try {
+      await api.delete(
+        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${goal.goal_id}`
+      );
+      toast.success("Goal deleted");
+      await refreshGoals();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    }
+  }
+
+  function openEdit(goal: Goal) {
+    setEditGoal(goal);
+    setEditCurrentValue(String(goal.current_value));
+    setEditNotes(goal.notes || "");
   }
 
   return (
@@ -189,6 +251,37 @@ export default function GoalsPage() {
             </Dialog>
           </div>
 
+          <Dialog open={!!editGoal} onOpenChange={(open) => !open && setEditGoal(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Update Progress</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Current Value</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={editCurrentValue}
+                    onChange={(e) => setEditCurrentValue(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={isUpdating} className="w-full">
+                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           {goals.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {goals.map((goal) => {
@@ -225,6 +318,36 @@ export default function GoalsPage() {
                       {goal.notes && (
                         <p className="text-sm text-muted-foreground">{goal.notes}</p>
                       )}
+                      <div className="flex gap-1 pt-2">
+                        {goal.status === "active" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => openEdit(goal)}>
+                              <Pencil className="mr-1 h-3 w-3" /> Update
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusChange(goal, "completed")}
+                            >
+                              <Check className="mr-1 h-3 w-3" /> Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleStatusChange(goal, "abandoned")}
+                            >
+                              Abandon
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(goal)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 );

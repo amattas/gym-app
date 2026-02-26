@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
     setIsLoading(true);
     api
       .get<{ data: DashboardData }>(
-        `/v1/gyms/${gymId}/analytics/dashboard?days=${days}`
+        `/v1/gyms/${gymId}/analytics/dashboard?period=${days}`
       )
       .then((res) => setData(res.data))
       .catch(() => setData(null))
