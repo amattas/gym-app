@@ -46,7 +46,9 @@ export default function ProgramDetailPage() {
     return api
       .get<{ data: ProgramDay[] }>(`/v1/programs/${programId}/days`)
       .then((res) => setDays(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load program days");
+      });
   }, [programId]);
 
   useEffect(() => {
@@ -60,7 +62,10 @@ export default function ProgramDetailPage() {
           `/v1/program-days/${selectedDay}/exercises`
         )
         .then((res) => setDayExercises(res.data))
-        .catch(() => setDayExercises([]));
+        .catch((err) => {
+          toast.error(err instanceof Error ? err.message : "Failed to load exercises");
+          setDayExercises([]);
+        });
     }
   }, [selectedDay]);
 

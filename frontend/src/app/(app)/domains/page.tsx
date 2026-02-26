@@ -52,7 +52,9 @@ export default function DomainsPage() {
     api
       .get<{ data: CustomDomain[] }>("/v1/domains")
       .then((res) => setDomains(res.data))
-      .catch(() => {})
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load domains");
+      })
       .finally(() => setIsLoading(false));
   }
 
