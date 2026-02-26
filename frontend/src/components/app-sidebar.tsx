@@ -4,16 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Bell,
   Calendar,
+  Camera,
   ClipboardCheck,
   CreditCard,
   Dumbbell,
   FileText,
+  Globe,
   Home,
   MapPin,
   Settings,
+  Shield,
   Users,
   UserCog,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +44,14 @@ const navItems = [
   { title: "Locations", href: "/locations", icon: MapPin },
   { title: "Exercises", href: "/exercises", icon: Dumbbell },
   { title: "Analytics", href: "/analytics", icon: BarChart3 },
+  { title: "Billing", href: "/billing", icon: Wallet },
+  { title: "Agreements", href: "/agreements", icon: FileText },
+  { title: "Accounts", href: "/accounts", icon: Users },
+  { title: "Progress Photos", href: "/progress-photos", icon: Camera },
+  { title: "Notifications", href: "/notifications", icon: Bell },
+  { title: "Audit Logs", href: "/audit-logs", icon: Shield },
+  { title: "Usage", href: "/usage", icon: BarChart3 },
+  { title: "Domains", href: "/domains", icon: Globe },
   { title: "Settings", href: "/settings", icon: Settings },
 ];
 

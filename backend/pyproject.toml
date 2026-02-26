@@ -20,6 +20,8 @@ dependencies = [
     "apscheduler>=3.10.0",
     "webauthn>=2.0.0",
     "aiosmtplib>=3.0.0",
+    "stripe>=8.0.0",
+    "strawberry-graphql[fastapi]>=0.220.0",
 ]
 
 [project.optional-dependencies]

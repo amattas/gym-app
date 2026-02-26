@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -43,13 +42,11 @@ export default function ProgramDetailPage() {
   const [newDayName, setNewDayName] = useState("");
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
 
-  const fetchDays = useCallback(async () => {
-    try {
-      const res = await api.get<{ data: ProgramDay[] }>(
-        `/v1/programs/${programId}/days`
-      );
-      setDays(res.data);
-    } catch {}
+  const fetchDays = useCallback(() => {
+    return api
+      .get<{ data: ProgramDay[] }>(`/v1/programs/${programId}/days`)
+      .then((res) => setDays(res.data))
+      .catch(() => {});
   }, [programId]);
 
   useEffect(() => {

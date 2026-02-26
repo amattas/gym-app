@@ -42,25 +42,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      api
-        .get<{ data: User }>("/v1/auth/me")
-        .then((res) => {
-          setState({
-            user: res.data,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-        })
-        .catch(() => {
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          setState({ user: null, isLoading: false, isAuthenticated: false });
+    const load = async () => {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      try {
+        const res = await api.get<{ data: User }>("/v1/auth/me");
+        setState({
+          user: res.data,
+          isLoading: false,
+          isAuthenticated: true,
         });
-    } else {
-      setState({ user: null, isLoading: false, isAuthenticated: false });
-    }
+        return;
+      } catch {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+      }
+    };
+    load().then(() => {
+      setState((prev) =>
+        prev.isLoading
+          ? { user: null, isLoading: false, isAuthenticated: false }
+          : prev
+      );
+    });
   }, []);
 
   const login = useCallback(

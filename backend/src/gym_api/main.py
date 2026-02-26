@@ -21,16 +21,20 @@ from gym_api.middleware.rate_limiter import RateLimiterMiddleware
 from gym_api.middleware.request_id import RequestIDMiddleware
 from gym_api.middleware.security_headers import SecurityHeadersMiddleware
 from gym_api.routers.accounts import router as accounts_router
+from gym_api.routers.agreements import router as agreements_router
 from gym_api.routers.ai_summaries import router as ai_summaries_router
 from gym_api.routers.analytics import router as analytics_router
 from gym_api.routers.audit_logs import router as audit_logs_router
 from gym_api.routers.auth import router as auth_router
+from gym_api.routers.billing import router as billing_router
 from gym_api.routers.calendar import router as calendar_router
 from gym_api.routers.check_ins import router as check_ins_router
 from gym_api.routers.clients import router as clients_router
+from gym_api.routers.custom_domains import router as custom_domains_router
 from gym_api.routers.data_privacy import router as data_privacy_router
 from gym_api.routers.exercises import router as exercises_router
 from gym_api.routers.goals import router as goals_router
+from gym_api.routers.graphql_router import router as graphql_router
 from gym_api.routers.gyms import router as gyms_router
 from gym_api.routers.health import router as health_router
 from gym_api.routers.invitations import router as invitations_router
@@ -44,7 +48,9 @@ from gym_api.routers.plan_templates import router as plan_templates_router
 from gym_api.routers.programs import router as programs_router
 from gym_api.routers.progress_photos import router as progress_photos_router
 from gym_api.routers.schedules import router as schedules_router
+from gym_api.routers.stripe_webhooks import router as stripe_webhooks_router
 from gym_api.routers.trainers import router as trainers_router
+from gym_api.routers.usage import router as usage_router
 from gym_api.routers.webhook_endpoints import router as webhook_endpoints_router
 from gym_api.routers.workouts import router as workouts_router
 from gym_api.utils.log_redaction import PiiRedactionFilter
@@ -124,3 +130,9 @@ app.include_router(notifications_router)
 app.include_router(calendar_router)
 app.include_router(ai_summaries_router)
 app.include_router(data_privacy_router)
+app.include_router(billing_router)
+app.include_router(stripe_webhooks_router)
+app.include_router(agreements_router)
+app.include_router(usage_router)
+app.include_router(custom_domains_router)
+app.include_router(graphql_router)

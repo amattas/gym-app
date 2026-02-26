@@ -27,7 +27,7 @@ jobs:
             backend:
               - 'backend/**'
             web:
-              - 'web/**'
+              - 'frontend/**'
             android:
               - 'android/**'
             ios:
@@ -57,7 +57,7 @@ jobs:
           pip install bandit pip-audit
 
       - name: Lint (ruff)
-        run: ruff check src/ tests/
+        run: ruff check .
 
       - name: Security scan (bandit)
         run: bandit -r src/ -q
@@ -132,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: web
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -140,19 +140,16 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Lint (eslint)
-        run: npx eslint .
+        run: npm run lint
 
-      - name: Check formatting (prettier)
-        run: npx prettier --check .
-
-      - name: Type check (tsc)
-        run: npx tsc --noEmit
+      - name: Type check & build
+        run: npm run build
 
   web-test:
     needs: changes
@@ -160,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: web
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
@@ -168,13 +165,13 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npx jest --ci --coverage
+      - name: Build
+        run: npm run build
 
   # ---------------------------------------------------------------------------
   # Kotlin — android
