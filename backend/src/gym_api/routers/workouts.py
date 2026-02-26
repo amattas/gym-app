@@ -12,6 +12,7 @@ from gym_api.schemas.workout import (
     WorkoutResponse,
     WorkoutSetCreate,
     WorkoutSetResponse,
+    WorkoutSetUpdate,
     WorkoutUpdate,
 )
 from gym_api.services import workout_service
@@ -137,3 +138,82 @@ async def list_sets(
         raise HTTPException(status_code=404, detail="Workout not found")
     items = await workout_service.list_sets(db, workout_exercise_id)
     return {"data": [WorkoutSetResponse.model_validate(s) for s in items]}
+
+
+@router.post("/{workout_id}/start", response_model=dict)
+async def start_workout(
+    workout_id: uuid.UUID,
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workout = await workout_service.start_workout(
+        db, workout_id=workout_id, gym_id=gym_id
+    )
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    return {"data": WorkoutResponse.model_validate(workout)}
+
+
+@router.post("/{workout_id}/complete", response_model=dict)
+async def complete_workout(
+    workout_id: uuid.UUID,
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workout = await workout_service.complete_workout(
+        db, workout_id=workout_id, gym_id=gym_id
+    )
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    new_prs = await workout_service.detect_prs(
+        db,
+        workout_id=workout_id,
+        gym_id=gym_id,
+        client_id=workout.client_id,
+    )
+    return {
+        "data": WorkoutResponse.model_validate(workout),
+        "new_prs": len(new_prs),
+    }
+
+
+@router.patch(
+    "/{workout_id}/exercises/{workout_exercise_id}/sets/{set_id}",
+    response_model=dict,
+)
+async def update_set(
+    workout_id: uuid.UUID,
+    workout_exercise_id: uuid.UUID,
+    set_id: uuid.UUID,
+    body: WorkoutSetUpdate,
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workout = await workout_service.get_workout(db, gym_id, workout_id)
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    ws = await workout_service.update_workout_set(
+        db, set_id=set_id, **body.model_dump(exclude_unset=True)
+    )
+    if not ws:
+        raise HTTPException(status_code=404, detail="Set not found")
+    return {"data": WorkoutSetResponse.model_validate(ws)}
+
+
+@router.delete(
+    "/{workout_id}/exercises/{workout_exercise_id}/sets/{set_id}",
+    status_code=204,
+)
+async def delete_set(
+    workout_id: uuid.UUID,
+    workout_exercise_id: uuid.UUID,
+    set_id: uuid.UUID,
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+):
+    workout = await workout_service.get_workout(db, gym_id, workout_id)
+    if not workout:
+        raise HTTPException(status_code=404, detail="Workout not found")
+    deleted = await workout_service.delete_workout_set(db, set_id=set_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Set not found")

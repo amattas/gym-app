@@ -40,7 +40,12 @@ from gym_api.routers.health import router as health_router
 from gym_api.routers.invitations import router as invitations_router
 from gym_api.routers.locations import location_detail_router
 from gym_api.routers.locations import router as locations_router
-from gym_api.routers.measurements import router as measurements_router
+from gym_api.routers.measurements import (
+    client_measurements_router,
+)
+from gym_api.routers.measurements import (
+    router as measurements_router,
+)
 from gym_api.routers.memberships import router as memberships_router
 from gym_api.routers.notes import router as notes_router
 from gym_api.routers.notifications import router as notifications_router
@@ -112,6 +117,7 @@ app.include_router(exercises_router)
 app.include_router(programs_router)
 app.include_router(workouts_router)
 app.include_router(measurements_router)
+app.include_router(client_measurements_router)
 app.include_router(invitations_router)
 app.include_router(analytics_router)
 app.include_router(plan_templates_router)

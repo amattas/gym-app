@@ -33,6 +33,13 @@ class WorkoutSetCreate(BaseModel):
     completed: bool = True
 
 
+class WorkoutSetUpdate(BaseModel):
+    weight_kg: float | None = None
+    reps: int | None = None
+    completed: bool | None = None
+    duration_seconds: int | None = None
+
+
 class WorkoutSetResponse(BaseModel):
     set_id: uuid.UUID
     workout_exercise_id: uuid.UUID
