@@ -45,10 +45,8 @@ async def regenerate_summary(
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
-    summary = await ai_summary_service.create_summary(
-        db, gym_id=gym_id, client_id=client_id,
-        content="AI summary generation pending",
-        model_used="pending",
+    summary = await ai_summary_service.generate_client_summary(
+        db, gym_id, client_id
     )
     return {"data": SummaryResponse.model_validate(summary)}
 
