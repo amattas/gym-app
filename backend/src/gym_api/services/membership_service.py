@@ -101,6 +101,28 @@ async def get_membership(
     return result.scalar_one_or_none()
 
 
+async def list_gym_memberships(
+    db: AsyncSession,
+    gym_id: uuid.UUID,
+    *,
+    status: str | None = None,
+    cursor: str | None = None,
+    limit: int = 20,
+) -> tuple[list[ClientMembership], dict]:
+    query = select(ClientMembership).where(
+        ClientMembership.gym_id == gym_id,
+    )
+    if status:
+        query = query.where(ClientMembership.status == status)
+    query = apply_cursor_pagination(
+        query, order_column=ClientMembership.created_at, cursor=cursor, limit=limit
+    )
+    result = await db.execute(query)
+    items = list(result.scalars().all())
+    items, pagination = build_pagination_meta(items, limit, "created_at")
+    return items, pagination
+
+
 async def list_client_memberships(
     db: AsyncSession,
     gym_id: uuid.UUID,

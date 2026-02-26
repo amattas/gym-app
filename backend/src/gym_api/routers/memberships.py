@@ -39,6 +39,23 @@ async def create_membership(
     return {"data": MembershipResponse.model_validate(membership)}
 
 
+@router.get("/v1/memberships", response_model=dict)
+async def list_gym_memberships(
+    status: str | None = Query(None),
+    cursor: str | None = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    gym_id: uuid.UUID = Depends(get_gym_context),
+    db: AsyncSession = Depends(get_db),
+):
+    items, pagination = await membership_service.list_gym_memberships(
+        db, gym_id, status=status, cursor=cursor, limit=limit
+    )
+    return {
+        "data": [MembershipResponse.model_validate(m) for m in items],
+        "pagination": pagination,
+    }
+
+
 @router.get("/v1/clients/{client_id}/memberships", response_model=dict)
 async def list_client_memberships(
     client_id: uuid.UUID,
@@ -72,7 +89,7 @@ async def get_membership(
 @router.post("/v1/memberships/{membership_id}/pause", response_model=dict)
 async def pause_membership(
     membership_id: uuid.UUID,
-    body: MembershipPause,
+    body: MembershipPause | None = None,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
@@ -81,7 +98,7 @@ async def pause_membership(
         raise HTTPException(status_code=404, detail="Membership not found")
     try:
         membership = await membership_service.pause_membership(
-            db, membership, reason=body.reason
+            db, membership, reason=body.reason if body else None
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -107,7 +124,7 @@ async def unpause_membership(
 @router.post("/v1/memberships/{membership_id}/cancel", response_model=dict)
 async def cancel_membership(
     membership_id: uuid.UUID,
-    body: MembershipCancel,
+    body: MembershipCancel | None = None,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
 ):
@@ -116,7 +133,10 @@ async def cancel_membership(
         raise HTTPException(status_code=404, detail="Membership not found")
     try:
         membership = await membership_service.cancel_membership(
-            db, membership, reason=body.reason, cancel_immediately=body.cancel_immediately
+            db,
+            membership,
+            reason=body.reason if body else None,
+            cancel_immediately=body.cancel_immediately if body else False,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
