@@ -33,6 +33,15 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
+interface Invoice {
+  invoice_id: string;
+  account_id: string;
+  amount_cents: number;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+}
+
 interface StripeAccount {
   stripe_account_id: string;
   onboarding_status: string;
@@ -55,6 +64,7 @@ interface DiscountCode {
 export default function BillingPage() {
   const [account, setAccount] = useState<StripeAccount | null>(null);
   const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showDiscount, setShowDiscount] = useState(false);
   const [code, setCode] = useState("");
@@ -66,9 +76,11 @@ export default function BillingPage() {
     Promise.allSettled([
       api.get<{ data: StripeAccount }>("/v1/billing/stripe/account"),
       api.get<{ data: DiscountCode[] }>("/v1/billing/discount-codes"),
-    ]).then(([acctResult, discountResult]) => {
+      api.get<{ data: Invoice[] }>("/v1/billing/invoices"),
+    ]).then(([acctResult, discountResult, invoiceResult]) => {
       if (acctResult.status === "fulfilled") setAccount(acctResult.value.data);
       if (discountResult.status === "fulfilled") setDiscounts(discountResult.value.data);
+      if (invoiceResult.status === "fulfilled") setInvoices(invoiceResult.value.data);
       setIsLoading(false);
     });
   }, []);
@@ -128,6 +140,7 @@ export default function BillingPage() {
       <Tabs defaultValue="stripe">
         <TabsList>
           <TabsTrigger value="stripe">Stripe Account</TabsTrigger>
+          <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="discounts">Discount Codes</TabsTrigger>
         </TabsList>
 
@@ -176,6 +189,63 @@ export default function BillingPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice ID</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8">
+                      No invoices
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  invoices.map((inv) => (
+                    <TableRow key={inv.invoice_id}>
+                      <TableCell className="font-mono text-sm">
+                        {inv.invoice_id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        ${(inv.amount_cents / 100).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            inv.status === "paid"
+                              ? "default"
+                              : inv.status === "uncollectible"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                        >
+                          {inv.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {inv.due_date
+                          ? new Date(inv.due_date).toLocaleDateString()
+                          : "\u2014"}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(inv.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="discounts">

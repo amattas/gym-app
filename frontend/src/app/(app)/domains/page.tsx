@@ -76,6 +76,16 @@ export default function DomainsPage() {
     }
   }
 
+  async function handleDelete(domainId: string) {
+    try {
+      await api.delete(`/v1/domains/${domainId}`);
+      toast.success("Domain deleted");
+      fetchDomains();
+    } catch {
+      toast.error("Failed to delete domain");
+    }
+  }
+
   async function handleVerify(domainId: string) {
     try {
       await api.post(`/v1/domains/${domainId}/verify`);
@@ -181,15 +191,24 @@ export default function DomainsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {d.status === "pending" && (
+                    <div className="flex gap-1">
+                      {d.status === "pending" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleVerify(d.domain_id)}
+                        >
+                          Verify
+                        </Button>
+                      )}
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => handleVerify(d.domain_id)}
+                        variant="destructive"
+                        onClick={() => handleDelete(d.domain_id)}
                       >
-                        Verify
+                        Delete
                       </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

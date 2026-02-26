@@ -109,7 +109,7 @@ export default function GoalsPage() {
     setIsUpdating(true);
     try {
       await api.put(
-        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${editGoal.goal_id}`,
+        `/v1/goals/${editGoal.goal_id}`,
         {
           current_value: parseFloat(editCurrentValue),
           notes: editNotes || null,
@@ -128,7 +128,7 @@ export default function GoalsPage() {
   async function handleStatusChange(goal: Goal, status: string) {
     try {
       await api.put(
-        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${goal.goal_id}`,
+        `/v1/goals/${goal.goal_id}`,
         { status }
       );
       toast.success(`Goal marked as ${status}`);
@@ -141,7 +141,7 @@ export default function GoalsPage() {
   async function handleDelete(goal: Goal) {
     try {
       await api.delete(
-        `/v1/clients/${encodeURIComponent(searchedClientId)}/goals/${goal.goal_id}`
+        `/v1/goals/${goal.goal_id}`
       );
       toast.success("Goal deleted");
       await refreshGoals();
