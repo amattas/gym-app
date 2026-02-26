@@ -28,7 +28,7 @@ export default function NotificationsPage() {
     api
       .get<{ data: Preferences }>("/v1/notifications/preferences")
       .then((res) => setPrefs(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load notification preferences"); })
       .finally(() => setIsLoading(false));
   }, []);
 

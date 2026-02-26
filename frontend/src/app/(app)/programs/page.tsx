@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Program {
   program_id: string;
@@ -31,7 +32,7 @@ export default function ProgramsPage() {
     api
       .get<{ data: Program[] }>("/v1/programs")
       .then((res) => setPrograms(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load programs"); })
       .finally(() => setIsLoading(false));
   }, []);
 

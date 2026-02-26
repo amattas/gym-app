@@ -47,7 +47,7 @@ export default function NewWorkoutPage() {
     api
       .get<{ data: Exercise[] }>("/v1/exercises")
       .then((res) => setExercises(res.data))
-      .catch(() => {});
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load exercises"); });
   }, []);
 
   const addExercise = useCallback(() => {

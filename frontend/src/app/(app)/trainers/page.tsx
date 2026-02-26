@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Trainer {
   trainer_id: string;
@@ -29,7 +30,7 @@ export default function TrainersPage() {
     api
       .get<{ data: Trainer[] }>("/v1/trainers")
       .then((res) => setTrainers(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load trainers"); })
       .finally(() => setIsLoading(false));
   }, []);
 

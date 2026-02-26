@@ -55,7 +55,7 @@ export default function PlanTemplatesPage() {
     api
       .get<{ data: PlanTemplate[] }>("/v1/plan-templates")
       .then((res) => setTemplates(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load plan templates"); })
       .finally(() => setIsLoading(false));
   }, []);
 

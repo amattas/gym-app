@@ -35,7 +35,7 @@ export default function SettingsPage() {
         setName(res.data.name);
         setEmail(res.data.email || "");
         setPhone(res.data.phone || "");
-      } catch {}
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to load gym settings"); }
     };
     load().finally(() => setIsLoading(false));
   }, []);

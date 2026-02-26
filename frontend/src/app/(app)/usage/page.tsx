@@ -5,6 +5,7 @@ import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface MetricTotal {
   metric_name: string;
@@ -20,7 +21,7 @@ export default function UsagePage() {
     api
       .get<{ data: MetricTotal[] }>("/v1/usage/totals")
       .then((res) => setTotals(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load usage data"); })
       .finally(() => setIsLoading(false));
   }, []);
 

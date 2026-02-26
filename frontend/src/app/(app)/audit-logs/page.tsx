@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface AuditLog {
   audit_log_id: string;
@@ -34,7 +35,7 @@ export default function AuditLogsPage() {
     api
       .get<{ data: AuditLog[] }>(`/v1/audit-logs${params}`)
       .then((res) => setLogs(res.data))
-      .catch(() => {})
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load audit logs"); })
       .finally(() => setIsLoading(false));
   }, [actionFilter]);
 
