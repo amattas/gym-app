@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.membership import (
     EntitlementResponse,
@@ -24,6 +25,7 @@ async def create_membership(
     body: MembershipCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     try:
         membership = await membership_service.create_membership(
@@ -46,6 +48,7 @@ async def list_gym_memberships(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await membership_service.list_gym_memberships(
         db, gym_id, status=status, cursor=cursor, limit=limit
@@ -64,6 +67,7 @@ async def list_client_memberships(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await membership_service.list_client_memberships(
         db, gym_id, client_id, status=status, cursor=cursor, limit=limit
@@ -79,6 +83,7 @@ async def get_membership(
     membership_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:
@@ -92,6 +97,7 @@ async def pause_membership(
     body: MembershipPause | None = None,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:
@@ -110,6 +116,7 @@ async def unpause_membership(
     membership_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:
@@ -127,6 +134,7 @@ async def cancel_membership(
     body: MembershipCancel | None = None,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:
@@ -148,6 +156,7 @@ async def get_entitlements(
     membership_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:
@@ -161,6 +170,7 @@ async def record_visit(
     body: RecordVisitRequest,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     membership = await membership_service.get_membership(db, gym_id, membership_id)
     if not membership:

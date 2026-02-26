@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.services import webhook_endpoint_service
 
@@ -38,6 +39,7 @@ async def create_webhook(
     gym_id: uuid.UUID,
     body: WebhookCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     webhook = await webhook_endpoint_service.create_webhook(
         db, gym_id=gym_id, **body.model_dump()
@@ -49,6 +51,7 @@ async def create_webhook(
 async def list_webhooks(
     gym_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items = await webhook_endpoint_service.list_webhooks(db, gym_id)
     return {"data": [WebhookResponse.model_validate(w) for w in items]}
@@ -60,6 +63,7 @@ async def update_webhook(
     body: WebhookUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     webhook = await webhook_endpoint_service.get_webhook(db, gym_id, webhook_id)
     if not webhook:
@@ -75,6 +79,7 @@ async def delete_webhook(
     webhook_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     webhook = await webhook_endpoint_service.get_webhook(db, gym_id, webhook_id)
     if not webhook:

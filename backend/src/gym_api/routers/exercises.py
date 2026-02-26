@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.cache.cache_service import cache_get, cache_set
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.exercise import ExerciseCreate, ExerciseResponse, ExerciseUpdate
 from gym_api.services import exercise_service
@@ -19,6 +20,7 @@ async def create_exercise(
     body: ExerciseCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exercise = await exercise_service.create_exercise(db, gym_id=gym_id, **body.model_dump())
     return {"data": ExerciseResponse.model_validate(exercise)}
@@ -30,6 +32,7 @@ async def list_exercises(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await exercise_service.list_exercises(
         db, gym_id, cursor=cursor, limit=limit
@@ -45,6 +48,7 @@ async def get_exercise(
     exercise_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     cache_key = f"exercise:{exercise_id}"
     cached = await cache_get(cache_key)
@@ -68,6 +72,7 @@ async def update_exercise(
     body: ExerciseUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exercise = await exercise_service.get_exercise(db, exercise_id)
     if not exercise:
@@ -87,6 +92,7 @@ async def delete_exercise(
     exercise_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exercise = await exercise_service.get_exercise(db, exercise_id)
     if not exercise:

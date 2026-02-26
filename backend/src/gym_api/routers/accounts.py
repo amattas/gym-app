@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.account import (
     AccountCreate,
@@ -22,6 +23,7 @@ async def create_account(
     body: AccountCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     account = await account_service.create_account(db, gym_id=gym_id, **body.model_dump())
     return {"data": AccountResponse.model_validate(account)}
@@ -32,6 +34,7 @@ async def get_account(
     account_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     account = await account_service.get_account(db, gym_id, account_id)
     if not account:
@@ -44,6 +47,7 @@ async def list_members(
     account_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     members = await account_service.list_account_members(
         db, gym_id, account_id
@@ -61,6 +65,7 @@ async def add_member(
     body: AccountMemberAdd,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     account = await account_service.get_account(
         db, gym_id, account_id
@@ -87,6 +92,7 @@ async def remove_member(
     client_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     account = await account_service.get_account(
         db, gym_id, account_id
@@ -110,6 +116,7 @@ async def update_account(
     body: AccountUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     existing = await account_service.get_account(
         db, gym_id, account_id

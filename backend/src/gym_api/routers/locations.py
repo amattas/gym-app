@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.location import LocationCreate, LocationResponse, LocationUpdate
 from gym_api.services import location_service
@@ -17,6 +18,7 @@ async def create_location(
     gym_id: uuid.UUID,
     body: LocationCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     location = await location_service.create_location(db, gym_id=gym_id, **body.model_dump())
     return {"data": LocationResponse.model_validate(location)}
@@ -28,6 +30,7 @@ async def list_locations(
     cursor: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await location_service.list_locations(
         db, gym_id, cursor=cursor, limit=limit
@@ -43,6 +46,7 @@ async def get_location(
     location_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     location = await location_service.get_location(db, gym_id, location_id)
     if not location:
@@ -56,6 +60,7 @@ async def update_location(
     body: LocationUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     location = await location_service.get_location(db, gym_id, location_id)
     if not location:
@@ -71,6 +76,7 @@ async def delete_location(
     location_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     location = await location_service.get_location(db, gym_id, location_id)
     if not location:

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.cache.cache_service import cache_get, cache_set
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.program import ProgramCreate, ProgramResponse, ProgramUpdate
 from gym_api.services import program_service
@@ -19,6 +20,7 @@ async def create_program(
     body: ProgramCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     program = await program_service.create_program(db, gym_id=gym_id, **body.model_dump())
     return {"data": ProgramResponse.model_validate(program)}
@@ -31,6 +33,7 @@ async def list_programs(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await program_service.list_programs(
         db, gym_id, template_scope=template_scope, cursor=cursor, limit=limit
@@ -46,6 +49,7 @@ async def get_program(
     program_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     cache_key = f"program:{program_id}"
     cached = await cache_get(cache_key)
@@ -66,6 +70,7 @@ async def update_program(
     body: ProgramUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     program = await program_service.get_program(db, gym_id, program_id)
     if not program:
@@ -81,6 +86,7 @@ async def delete_program(
     program_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     program = await program_service.get_program(db, gym_id, program_id)
     if not program:
