@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -238,6 +239,7 @@ async def handle_payment_success(
         invoice = inv_result.scalar_one_or_none()
         if invoice:
             invoice.status = InvoiceStatus.paid
+            invoice.paid_at = datetime.now(timezone.utc)
             if invoice.membership_id:
                 m_result = await db.execute(
                     select(ClientMembership).where(
