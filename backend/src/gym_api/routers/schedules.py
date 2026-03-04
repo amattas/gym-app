@@ -152,6 +152,7 @@ async def complete_schedule(
 async def get_trainer_availability(
     trainer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     entries = await schedule_service.get_trainer_availability(db, trainer_id)
     return {"data": [TrainerAvailabilityResponse.model_validate(e) for e in entries]}
@@ -162,6 +163,7 @@ async def set_trainer_availability(
     trainer_id: uuid.UUID,
     body: list[TrainerAvailabilityEntry],
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     entries = await schedule_service.set_trainer_availability(
         db, trainer_id, [e.model_dump() for e in body]
@@ -174,6 +176,7 @@ async def create_trainer_exception(
     trainer_id: uuid.UUID,
     body: TrainerExceptionCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exc = await schedule_service.create_trainer_exception(
         db, trainer_id=trainer_id, **body.model_dump()
@@ -185,6 +188,7 @@ async def create_trainer_exception(
 async def delete_trainer_exception(
     exception_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exc = await schedule_service.get_trainer_exception(db, exception_id)
     if not exc:

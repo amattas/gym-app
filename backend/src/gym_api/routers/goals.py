@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.client_program import (
     ClientProgramCreate,
@@ -25,6 +26,7 @@ async def create_goal(
     body: GoalCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     goal = await goal_service.create_goal(
         db, gym_id=gym_id, client_id=client_id, **body.model_dump()
@@ -39,6 +41,7 @@ async def list_goals(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await goal_service.list_client_goals(
         db, gym_id, client_id, cursor=cursor, limit=limit
@@ -54,6 +57,7 @@ async def get_goal(
     goal_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     goal = await goal_service.get_goal(db, gym_id, goal_id)
     if not goal:
@@ -67,6 +71,7 @@ async def update_goal(
     body: GoalUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     goal = await goal_service.get_goal(db, gym_id, goal_id)
     if not goal:
@@ -80,6 +85,7 @@ async def delete_goal(
     goal_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     goal = await goal_service.get_goal(db, gym_id, goal_id)
     if not goal:
@@ -92,6 +98,7 @@ async def assign_program(
     client_id: uuid.UUID,
     body: ClientProgramCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     cp = await client_program_service.assign_program(
         db, client_id=client_id, **body.model_dump()
@@ -105,6 +112,7 @@ async def list_client_programs(
     cursor: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await client_program_service.list_client_programs(
         db, client_id, cursor=cursor, limit=limit
@@ -119,6 +127,7 @@ async def list_client_programs(
 async def list_program_days(
     program_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items = await client_program_service.list_program_days(db, program_id)
     return {"data": [ProgramDayResponse.model_validate(d) for d in items]}
@@ -129,6 +138,7 @@ async def create_program_day(
     program_id: uuid.UUID,
     body: ProgramDayCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     day = await client_program_service.create_program_day(
         db, program_id=program_id, **body.model_dump()
@@ -140,6 +150,7 @@ async def create_program_day(
 async def list_program_day_exercises(
     program_day_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items = await client_program_service.list_program_day_exercises(db, program_day_id)
     return {"data": [ProgramDayExerciseResponse.model_validate(e) for e in items]}
@@ -150,6 +161,7 @@ async def create_program_day_exercise(
     program_day_id: uuid.UUID,
     body: ProgramDayExerciseCreate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     exercise = await client_program_service.create_program_day_exercise(
         db, program_day_id=program_day_id, **body.model_dump()

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Client {
   client_id: string;
@@ -56,12 +57,16 @@ export default function ClientDetailPage() {
     api
       .get<{ data: Goal[] }>(`/v1/clients/${clientId}/goals`)
       .then((res) => setGoals(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load goals");
+      });
 
     api
       .get<{ data: Measurement[] }>(`/v1/clients/${clientId}/measurements`)
       .then((res) => setMeasurements(res.data))
-      .catch(() => {});
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load measurements");
+      });
   }, [clientId, router]);
 
   if (!client) {

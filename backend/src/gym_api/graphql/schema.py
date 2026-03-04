@@ -14,6 +14,12 @@ from gym_api.models.trainer import Trainer
 from gym_api.models.workout import Workout
 
 
+def _require_gym_access(info: Info, gym_id: uuid.UUID) -> None:
+    ctx_gym = info.context.get("gym_id")
+    if ctx_gym and ctx_gym != gym_id:
+        raise PermissionError("Access denied to this gym")
+
+
 @strawberry.type
 class ClientType:
     client_id: uuid.UUID
@@ -78,6 +84,7 @@ class Query:
     async def clients(
         self, info: Info, gym_id: uuid.UUID
     ) -> list[ClientType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             result = await db.execute(
                 select(Client).where(
@@ -123,6 +130,7 @@ class Query:
     async def trainers(
         self, info: Info, gym_id: uuid.UUID
     ) -> list[TrainerType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             result = await db.execute(
                 select(Trainer).where(Trainer.gym_id == gym_id)
@@ -145,6 +153,7 @@ class Query:
         gym_id: uuid.UUID,
         client_id: uuid.UUID | None = None,
     ) -> list[WorkoutType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             q = select(Workout).where(Workout.gym_id == gym_id)
             if client_id:
@@ -171,6 +180,7 @@ class Query:
         gym_id: uuid.UUID,
         trainer_id: uuid.UUID | None = None,
     ) -> list[ScheduleType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             q = select(Schedule).where(Schedule.gym_id == gym_id)
             if trainer_id:
@@ -197,6 +207,7 @@ class Query:
         gym_id: uuid.UUID,
         client_id: uuid.UUID | None = None,
     ) -> list[MembershipType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             q = select(ClientMembership).where(
                 ClientMembership.gym_id == gym_id
@@ -228,6 +239,7 @@ class Query:
     async def locations(
         self, info: Info, gym_id: uuid.UUID
     ) -> list[LocationType]:
+        _require_gym_access(info, gym_id)
         async with async_session() as db:
             result = await db.execute(
                 select(Location).where(

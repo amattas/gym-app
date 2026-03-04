@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.services import ai_summary_service
 
@@ -32,6 +33,7 @@ async def get_client_summary(
     client_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     summary = await ai_summary_service.get_client_summary(db, gym_id, client_id)
     if not summary:
@@ -44,11 +46,10 @@ async def regenerate_summary(
     client_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
-    summary = await ai_summary_service.create_summary(
-        db, gym_id=gym_id, client_id=client_id,
-        content="AI summary generation pending",
-        model_used="pending",
+    summary = await ai_summary_service.generate_client_summary(
+        db, gym_id, client_id
     )
     return {"data": SummaryResponse.model_validate(summary)}
 
@@ -58,6 +59,7 @@ async def update_summary(
     summary_id: uuid.UUID,
     body: SummaryUpdate,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     summary = await ai_summary_service.get_summary_by_id(db, summary_id)
     if not summary:

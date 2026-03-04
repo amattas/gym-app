@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.workout import (
     WorkoutCreate,
@@ -25,6 +26,7 @@ async def create_workout(
     body: WorkoutCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.create_workout(db, gym_id=gym_id, **body.model_dump())
     return {"data": WorkoutResponse.model_validate(workout)}
@@ -38,6 +40,7 @@ async def list_workouts(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await workout_service.list_workouts(
         db, gym_id, client_id=client_id, status=status, cursor=cursor, limit=limit
@@ -53,6 +56,7 @@ async def get_workout(
     workout_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -66,6 +70,7 @@ async def update_workout(
     body: WorkoutUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -82,6 +87,7 @@ async def add_exercise(
     body: WorkoutExerciseCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -97,6 +103,7 @@ async def list_exercises(
     workout_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -116,6 +123,7 @@ async def add_set(
     body: WorkoutSetCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -132,6 +140,7 @@ async def list_sets(
     workout_exercise_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -145,6 +154,7 @@ async def start_workout(
     workout_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.start_workout(
         db, workout_id=workout_id, gym_id=gym_id
@@ -159,6 +169,7 @@ async def complete_workout(
     workout_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.complete_workout(
         db, workout_id=workout_id, gym_id=gym_id
@@ -188,6 +199,7 @@ async def update_set(
     body: WorkoutSetUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:
@@ -210,6 +222,7 @@ async def delete_set(
     set_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     workout = await workout_service.get_workout(db, gym_id, workout_id)
     if not workout:

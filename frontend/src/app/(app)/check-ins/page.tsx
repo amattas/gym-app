@@ -57,7 +57,7 @@ export default function CheckInsPage() {
     api
       .get<{ data: Location[] }>("/v1/locations")
       .then((res) => setLocations(res.data))
-      .catch(() => {});
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load locations"); });
   }, []);
 
   const fetchCheckIns = useCallback(async () => {
@@ -71,7 +71,8 @@ export default function CheckInsPage() {
         `/v1/check-ins${qs ? `?${qs}` : ""}`
       );
       setCheckIns(res.data);
-    } catch {
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load check-ins");
       setCheckIns([]);
     } finally {
       setIsLoading(false);
@@ -92,7 +93,7 @@ export default function CheckInsPage() {
         `/v1/locations/${selectedLocation}/occupancy`
       )
       .then((res) => setOccupancy(res.data))
-      .catch(() => setOccupancy(null));
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load occupancy"); setOccupancy(null); });
   }, [selectedLocation]);
 
   async function handleCheckIn(e: React.FormEvent) {
@@ -115,7 +116,7 @@ export default function CheckInsPage() {
             `/v1/locations/${selectedLocation}/occupancy`
           )
           .then((res) => setOccupancy(res.data))
-          .catch(() => {});
+          .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to refresh occupancy"); });
       }
     } catch (err) {
       toast.error(
@@ -137,7 +138,7 @@ export default function CheckInsPage() {
             `/v1/locations/${selectedLocation}/occupancy`
           )
           .then((res) => setOccupancy(res.data))
-          .catch(() => {});
+          .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to refresh occupancy"); });
       }
     } catch (err) {
       toast.error(

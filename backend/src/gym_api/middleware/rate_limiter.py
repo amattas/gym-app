@@ -1,3 +1,5 @@
+import base64
+import json
 import logging
 import time
 
@@ -26,7 +28,8 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         client_ip = request.client.host if request.client else "unknown"
         path = request.url.path
-        key = f"{client_ip}:{path}"
+        identity = self._extract_identity(request, client_ip)
+        key = f"{identity}:{path}"
         max_requests, window = DEFAULT_LIMITS.get(path, API_LIMIT)
 
         remaining, reset_after = await self._check_rate_limit(key, max_requests, window)
@@ -93,3 +96,22 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
 
         bucket.append(now)
         return remaining, reset_after
+
+    @staticmethod
+    def _extract_identity(request: Request, client_ip: str) -> str:
+        auth = request.headers.get("authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:]
+            parts = token.split(".")
+            if len(parts) == 3:
+                try:
+                    payload = parts[1]
+                    # Add padding for base64
+                    payload += "=" * (-len(payload) % 4)
+                    data = json.loads(base64.urlsafe_b64decode(payload))
+                    user_id = data.get("sub")
+                    if user_id:
+                        return f"user:{user_id}"
+                except Exception:
+                    pass
+        return f"ip:{client_ip}"

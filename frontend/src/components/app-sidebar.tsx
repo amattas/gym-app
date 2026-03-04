@@ -34,29 +34,59 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Dashboard", href: "/dashboard", icon: Home },
-  { title: "Clients", href: "/clients", icon: Users },
-  { title: "Trainers", href: "/trainers", icon: UserCog },
-  { title: "Workouts", href: "/workouts", icon: Dumbbell },
-  { title: "Programs", href: "/programs", icon: FileText },
-  { title: "Schedules", href: "/schedules", icon: Calendar },
-  { title: "Check-ins", href: "/check-ins", icon: ClipboardCheck },
-  { title: "Memberships", href: "/memberships", icon: CreditCard },
-  { title: "Locations", href: "/locations", icon: MapPin },
-  { title: "Exercises", href: "/exercises", icon: Dumbbell },
-  { title: "Measurements", href: "/measurements", icon: Ruler },
-  { title: "Goals", href: "/goals", icon: Target },
-  { title: "Analytics", href: "/analytics", icon: BarChart3 },
-  { title: "Billing", href: "/billing", icon: Wallet },
-  { title: "Agreements", href: "/agreements", icon: FileText },
-  { title: "Accounts", href: "/accounts", icon: Users },
-  { title: "Progress Photos", href: "/progress-photos", icon: Camera },
-  { title: "Notifications", href: "/notifications", icon: Bell },
-  { title: "Audit Logs", href: "/audit-logs", icon: Shield },
-  { title: "Usage", href: "/usage", icon: BarChart3 },
-  { title: "Domains", href: "/domains", icon: Globe },
-  { title: "Settings", href: "/settings", icon: Settings },
+const navSections = [
+  {
+    label: "Overview",
+    items: [
+      { title: "Dashboard", href: "/dashboard", icon: Home },
+      { title: "Analytics", href: "/analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { title: "Clients", href: "/clients", icon: Users },
+      { title: "Trainers", href: "/trainers", icon: UserCog },
+      { title: "Accounts", href: "/accounts", icon: Users },
+    ],
+  },
+  {
+    label: "Training",
+    items: [
+      { title: "Workouts", href: "/workouts", icon: Dumbbell },
+      { title: "Programs", href: "/programs", icon: FileText },
+      { title: "Exercises", href: "/exercises", icon: Dumbbell },
+      { title: "Measurements", href: "/measurements", icon: Ruler },
+      { title: "Goals", href: "/goals", icon: Target },
+      { title: "Progress Photos", href: "/progress-photos", icon: Camera },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { title: "Schedules", href: "/schedules", icon: Calendar },
+      { title: "Check-ins", href: "/check-ins", icon: ClipboardCheck },
+      { title: "Memberships", href: "/memberships", icon: CreditCard },
+      { title: "Locations", href: "/locations", icon: MapPin },
+    ],
+  },
+  {
+    label: "Billing",
+    items: [
+      { title: "Billing", href: "/billing", icon: Wallet },
+      { title: "Agreements", href: "/agreements", icon: FileText },
+      { title: "Usage", href: "/usage", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { title: "Notifications", href: "/notifications", icon: Bell },
+      { title: "Audit Logs", href: "/audit-logs", icon: Shield },
+      { title: "Domains", href: "/domains", icon: Globe },
+      { title: "Settings", href: "/settings", icon: Settings },
+    ],
+  },
 ];
 
 export function AppSidebar() {
@@ -71,26 +101,28 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navSections.map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.startsWith(item.href)}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );

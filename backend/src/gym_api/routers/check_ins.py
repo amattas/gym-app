@@ -103,6 +103,7 @@ async def get_occupancy_history(
     location_id: uuid.UUID,
     date: datetime = Query(...),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     history = await check_in_service.get_occupancy_history(
         db, location_id=location_id, date=date

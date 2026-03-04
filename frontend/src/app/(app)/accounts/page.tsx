@@ -87,7 +87,7 @@ export default function AccountsPage() {
         api.get<{ data: Account }>(`/v1/accounts/${encodeURIComponent(searchId)}`),
         api
           .get<{ data: Member[] }>(`/v1/accounts/${encodeURIComponent(searchId)}/members`)
-          .catch(() => ({ data: [] as Member[] })),
+          .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load account members"); return { data: [] as Member[] }; }),
       ]);
       setAccount(acctRes.data);
       setMembers(membersRes.data);

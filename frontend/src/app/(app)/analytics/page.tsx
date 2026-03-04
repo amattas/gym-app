@@ -47,7 +47,10 @@ export default function AnalyticsPage() {
         `/v1/gyms/${gymId}/analytics/dashboard?period=${days}`
       )
       .then((res) => setData(res.data))
-      .catch(() => setData(null))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load analytics");
+        setData(null);
+      })
       .finally(() => setIsLoading(false));
   }, [days]);
 
@@ -76,7 +79,10 @@ export default function AnalyticsPage() {
         `/v1/clients/${encodeURIComponent(clientId)}/analytics/workouts?days=${clientDays}`
       )
       .then((res) => setClientStats(res.data))
-      .catch(() => setClientStats(null))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load client analytics");
+        setClientStats(null);
+      })
       .finally(() => setIsClientLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientDays]);

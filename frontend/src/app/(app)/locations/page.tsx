@@ -5,6 +5,7 @@ import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Location {
   location_id: string;
@@ -29,7 +30,7 @@ export default function LocationsPage() {
           `/v1/gyms/${gymId}/locations`
         );
         setLocations(res.data);
-      } catch {}
+      } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to load locations"); }
     };
     load().finally(() => setIsLoading(false));
   }, []);

@@ -32,7 +32,7 @@ export default function AssignMembershipPage() {
     api
       .get<{ data: PlanTemplate[] }>("/v1/plan-templates?status=active")
       .then((res) => setTemplates(res.data))
-      .catch(() => {});
+      .catch((err) => { toast.error(err instanceof Error ? err.message : "Failed to load plan templates"); });
   }, []);
 
   async function handleAssign(e: React.FormEvent) {

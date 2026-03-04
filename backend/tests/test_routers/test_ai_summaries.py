@@ -63,15 +63,18 @@ async def test_get_client_summary_not_found(client):
 
 @pytest.mark.asyncio
 async def test_regenerate_summary(client):
-    summary = _make_summary(content="AI summary generation pending", model_used="pending")
+    summary = _make_summary(
+        content="Workout Summary (30-day period)\nTotal workouts: 5",
+        model_used="data-driven-v1",
+    )
     with patch(
-        "gym_api.routers.ai_summaries.ai_summary_service.create_summary",
+        "gym_api.routers.ai_summaries.ai_summary_service.generate_client_summary",
         new_callable=AsyncMock,
     ) as mock:
         mock.return_value = summary
         resp = await client.post(f"/v1/clients/{CLIENT_ID}/ai-summary/regenerate")
     assert resp.status_code == 200
-    assert resp.json()["data"]["content"] == "AI summary generation pending"
+    assert "Workout Summary" in resp.json()["data"]["content"]
 
 
 @pytest.mark.asyncio

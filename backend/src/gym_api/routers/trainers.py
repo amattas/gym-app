@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.client import ClientResponse
 from gym_api.schemas.trainer import TrainerCreate, TrainerResponse, TrainerUpdate
@@ -17,6 +18,7 @@ async def create_trainer(
     body: TrainerCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     trainer = await trainer_service.create_trainer(db, gym_id=gym_id, **body.model_dump())
     return {"data": TrainerResponse.model_validate(trainer)}
@@ -28,6 +30,7 @@ async def list_trainers(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await trainer_service.list_trainers(db, gym_id, cursor=cursor, limit=limit)
     return {
@@ -41,6 +44,7 @@ async def get_trainer(
     trainer_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     trainer = await trainer_service.get_trainer(db, gym_id, trainer_id)
     if not trainer:
@@ -54,6 +58,7 @@ async def update_trainer(
     body: TrainerUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     trainer = await trainer_service.get_trainer(db, gym_id, trainer_id)
     if not trainer:
@@ -71,6 +76,7 @@ async def list_trainer_clients(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await trainer_client_service.list_trainer_clients(
         db, gym_id, trainer_id, cursor=cursor, limit=limit

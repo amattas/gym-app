@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.schemas.plan_template import (
     PlanTemplateCreate,
@@ -20,6 +21,7 @@ async def create_plan_template(
     body: PlanTemplateCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     template = await plan_template_service.create_plan_template(
         db, gym_id=gym_id, **body.model_dump()
@@ -35,6 +37,7 @@ async def list_plan_templates(
     limit: int = Query(20, ge=1, le=100),
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     items, pagination = await plan_template_service.list_plan_templates(
         db, gym_id, status=status, plan_type=plan_type, cursor=cursor, limit=limit
@@ -50,6 +53,7 @@ async def get_plan_template(
     plan_template_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     template = await plan_template_service.get_plan_template(db, gym_id, plan_template_id)
     if not template:
@@ -63,6 +67,7 @@ async def update_plan_template(
     body: PlanTemplateUpdate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     template = await plan_template_service.get_plan_template(db, gym_id, plan_template_id)
     if not template:
@@ -78,6 +83,7 @@ async def delete_plan_template(
     plan_template_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     template = await plan_template_service.get_plan_template(db, gym_id, plan_template_id)
     if not template:

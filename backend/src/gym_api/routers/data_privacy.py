@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from gym_api.database import get_db
+from gym_api.dependencies.auth import get_current_user
 from gym_api.dependencies.gym_scope import get_gym_context
 from gym_api.services import data_deletion_service, data_export_service
 
@@ -47,17 +48,20 @@ async def create_data_export(
     client_id: uuid.UUID,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     request = await data_export_service.create_export_request(
         db, gym_id=gym_id, client_id=client_id
     )
-    return {"data": ExportRequestResponse.model_validate(request)}
+    processed = await data_export_service.process_export(db, request.export_id)
+    return {"data": ExportRequestResponse.model_validate(processed or request)}
 
 
 @router.get("/v1/data-exports/{export_id}/status", response_model=dict)
 async def get_export_status(
     export_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     request = await data_export_service.get_export_request(db, export_id)
     if not request:
@@ -69,6 +73,7 @@ async def get_export_status(
 async def download_export(
     export_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     request = await data_export_service.get_export_request(db, export_id)
     if not request:
@@ -84,6 +89,7 @@ async def request_deletion(
     body: DeletionRequestCreate,
     gym_id: uuid.UUID = Depends(get_gym_context),
     db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
 ):
     request = await data_deletion_service.create_deletion_request(
         db, gym_id=gym_id, client_id=client_id, reason=body.reason

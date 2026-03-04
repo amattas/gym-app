@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     smtp_user: str = ""
     smtp_password: str = ""
     smtp_from_email: str = "noreply@gymplatform.io"
+    cors_allowed_origins: str = ""
 
     model_config = {"env_prefix": "", "env_file": ".env"}
 

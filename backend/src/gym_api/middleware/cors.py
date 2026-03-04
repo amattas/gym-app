@@ -6,8 +6,14 @@ PLATFORM_ORIGINS = [
 ]
 
 
-def create_cors_middleware(app, *, extra_origins: list[str] | None = None):
+def create_cors_middleware(
+    app, *, cors_allowed_origins: str = "", extra_origins: list[str] | None = None
+):
     allowed = list(PLATFORM_ORIGINS)
+    if cors_allowed_origins:
+        allowed.extend(
+            origin.strip() for origin in cors_allowed_origins.split(",") if origin.strip()
+        )
     if extra_origins:
         allowed.extend(extra_origins)
 
